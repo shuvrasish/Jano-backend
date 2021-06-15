@@ -1,4 +1,4 @@
-const { db, auth } = require("../config/firebase-config");
+const { db, admin } = require("../config/firebase-config");
 
 exports.getAllUsers = (req, res) => {
   db.collection("Users")
@@ -11,22 +11,21 @@ exports.getAllUsers = (req, res) => {
       return res.status(200).json(users);
     })
     .catch((err) => {
-      console.error(err);
       return res.status(500).json({ error: err.code });
     });
 };
 
 exports.getOneUser = (req, res) => {
-  try {
-    const userRef = db.collection("Users").doc(req.params.email);
-    const doc = userRef.get();
-    if (!doc.exists) {
-      return res.status(400).json({ message: "User not found!" });
-    }
-    return res.status(200).json({ ...doc.data() });
-  } catch (err) {
-    return res.status(500).json({ error: err.code });
-  }
+  const email = req.body.email;
+  const userRef = db.collection("Users").doc(email);
+  userRef
+    .get()
+    .then((doc) => {
+      return res.status(200).json({ ...doc.data() });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
 };
 
 exports.addCategoryPref = (req, res) => {
@@ -47,7 +46,7 @@ exports.addCategoryPref = (req, res) => {
       }
     })
     .then(() => {
-      return res.status(200).json({ message: "Category preference added." });
+      return res.status(201).json({ message: "Category preference added." });
     })
     .catch((err) => {
       return res.status(500).json({ error: err.code });
@@ -121,7 +120,7 @@ exports.setLangPref = (req, res) => {
       { merge: true }
     )
     .then(() => {
-      return res.status(200).json({ message: "Language preference set." });
+      return res.status(201).json({ message: "Language preference set." });
     })
     .catch((err) => {
       return res.status(500).json({ error: err.code });
@@ -151,8 +150,96 @@ exports.getLangPref = (req, res) => {
     });
 };
 
+exports.createUserDoc = (req, res) => {
+  const name = req.body.name;
+  const email = req.body.email;
+  db.collection("Users")
+    .doc(email)
+    .set(
+      {
+        Name: name,
+        Email: email,
+      },
+      { merge: true }
+    )
+    .then(() => {
+      return res.status(201).json({ message: "User document created." });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.handleShareLoggedIn = (req, res) => {
+  const email = req.body.email;
+  db.collection("Users")
+    .doc(email)
+    .update({
+      Profile_share: admin.firestore.FieldValue.increment(1),
+    })
+    .then(() => {
+      res.status(201).json({ message: "Profile shares incremented" });
+    })
+    .catch((err) => {
+      res.json({ error: err.code });
+    });
+};
+
+exports.handleShareNotLoggedIn = (req, res) => {
+  db.collection("WithoutLoginAnalytics")
+    .doc("WithoutLogin")
+    .update({
+      Profile_share: admin.firestore.FieldValue.increment(1),
+    })
+    .then(() => {
+      res.status(201).json({ message: "Profile shares incremented" });
+    })
+    .catch((err) => {
+      res.json({ error: err.code });
+    });
+};
+
+exports.getShares = (req, res) => {
+  const email = req.body.email;
+  const userRef = database.collection("Users").doc(email);
+  userRef
+    .get()
+    .then((doc) => {
+      const { share } = doc.data();
+      if (share) {
+        return res.status(200).send(share);
+      } else {
+        return res.status(400).json({ message: "Share field empty." });
+      }
+    })
+    .catch((err) => {
+      res.status(500).send();
+    });
+};
+
+exports.getFeedbacks = (req, res) => {
+  const email = req.body.email;
+  const userRef = database.collection("Users").doc(email);
+  userRef
+    .get()
+    .then((doc) => {
+      const { feedback } = doc.data();
+      if (feedback) {
+        return res.status(200).send(feedback);
+      } else {
+        return res.status(400).json({ message: "Feedback field empty." });
+      }
+    })
+    .catch((err) => {
+      res.status(500).send();
+    });
+};
+
 exports.getAuthenticatedUser = (req, res) => {
-  const user = auth.currentUser;
-  res.send(user);
-  console.log(user);
+  const user = admin.auth().currentUser;
+  if (!user) {
+    res.status(400).json({ message: "Not logged in." });
+  } else {
+    res.status(200).send(user);
+  }
 };

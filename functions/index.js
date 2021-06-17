@@ -55,4 +55,7 @@ app.get("/getAuthenticatedUser", getAuthenticatedUser);
 app.get("/getCardsWithLoginAnalytics", getCardsWithLoginAnalytics);
 app.get("/getCardsWithoutLoginAnalytics", getCardsWithoutLoginAnalytics);
 
+//categories
+app.get("/getAllCategories", getAllCategoryData);
+
 exports.api = functions.region("asia-south1").https.onRequest(app);

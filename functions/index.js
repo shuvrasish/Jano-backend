@@ -6,6 +6,8 @@ const {
   getCardsWithoutLogin,
   getCardsWithLogin,
   getAllCategoryData,
+  getLikedCards,
+  commentOnCard,
 } = require("./handlers/cards");
 const {
   getAllUsers,
@@ -37,6 +39,8 @@ app.get("/", (req, res) => {
 app.get("/getCardsWithoutLogin", getCardsWithoutLogin);
 app.get("/getCardsWithLogin", getCardsWithLogin);
 app.get("/getAllCategoryData", getAllCategoryData); //returns an array with category and subcategory data
+app.get("/getLikedCards", getLikedCards);
+app.post("/comment/:cardid", commentOnCard); //TODO
 
 //users
 app.get("/getAllUsers", getAllUsers);

@@ -1,4 +1,4 @@
-const { db } = require("../config/firebase-config");
+const { db, admin } = require("../config/firebase-config");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -58,4 +58,61 @@ exports.getAllCategoryData = (req, res) => {
       return res.status(200).send(category_deets);
     })
     .catch((err) => console.error(err));
+};
+
+exports.getLikedCards = (req, res) => {
+  const email = req.body.email;
+  let likedNumbers = [];
+  db.collection("Users")
+    .doc(email)
+    .get()
+    .then((doc) => {
+      const { liked } = doc.data();
+      if (liked) likedNumbers = liked;
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
+  let likedCards = [];
+  db.collection("CardsWithLogin")
+    .get()
+    .then((querySnapshot) => {
+      querySnapshot.docs.forEach((doc) => {
+        const { id } = doc.data();
+        if (likedNumbers.includes(id)) {
+          likedCards.push({ ...doc.data() });
+        }
+      });
+    })
+    .then(() => {
+      return res.status(200).send(likedCards);
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.commentOnCard = (req, res) => {
+  const email = req.body.email;
+  const cardid = req.params.cardid;
+  const comment = {
+    body: req.body.message,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    user: email,
+    cardid: cardid,
+  };
+  db.collection("comments")
+    .doc(cardid)
+    .set(
+      {
+        comments: [...comments, comment],
+      },
+      { merge: true }
+    )
+    .then(() => {
+      return res.status(200).json({ message: "Comment Added" });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
 };

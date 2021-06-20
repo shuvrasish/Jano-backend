@@ -8,6 +8,7 @@ const {
   getAllCategoryData,
   getLikedCards,
   commentOnCard,
+  getCardComments,
 } = require("./handlers/cards");
 const {
   getAllUsers,
@@ -42,6 +43,7 @@ app.get("/getCardsWithLogin", getCardsWithLogin);
 app.get("/getAllCategoryData", getAllCategoryData); //returns an array with category and subcategory data
 app.get("/getLikedCards", getLikedCards);
 app.post("/comment/:cardid", commentOnCard); //TODO
+app.get("/getCardComments/:cardid", getCardComments);
 
 //users
 app.get("/getAllUsers", getAllUsers);

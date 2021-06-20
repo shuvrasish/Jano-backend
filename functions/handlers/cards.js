@@ -117,14 +117,35 @@ exports.commentOnCard = (req, res) => {
           });
       } else {
         let { comments } = doc.data();
-
         comments.push(comment);
-        console.log(comments);
         doc.ref.set({ comments, commentCount: doc.data().commentCount + 1 });
       }
     })
     .then(() => {
       return res.status(201).json({ message: "New comment added." });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.getCardComments = (req, res) => {
+  const cardid = req.params.cardid;
+
+  db.collection("comments")
+    .doc(cardid)
+    .get()
+    .then((doc) => {
+      let commentsList = [];
+      if (!doc.exists) {
+        return res.status(200).send(commentsList);
+      }
+
+      const { comments } = doc.data();
+      if (comments) {
+        commentsList = [...comments];
+      }
+      return res.status(200).send(commentsList);
     })
     .catch((err) => {
       return res.status(500).json({ error: err.code });

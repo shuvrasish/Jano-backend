@@ -1,4 +1,4 @@
-const { db, admin } = require("../config/firebase-config");
+const { db } = require("../config/firebase-config");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -93,24 +93,38 @@ exports.getLikedCards = (req, res) => {
 };
 
 exports.commentOnCard = (req, res) => {
+  if (req.body.message.trim() === "")
+    return res.status(400).json({ comment: "Must not be empty" });
   const email = req.body.email;
   const cardid = req.params.cardid;
   const comment = {
     body: req.body.message,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: new Date().toISOString(),
     user: email,
     cardid: cardid,
   };
+
   db.collection("comments")
     .doc(cardid)
-    .set(
-      {
-        comments: [...comments, comment],
-      },
-      { merge: true }
-    )
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        db.collection("comments")
+          .doc(cardid)
+          .set({
+            comments: [comment],
+            commentCount: 1,
+          });
+      } else {
+        let { comments } = doc.data();
+
+        comments.push(comment);
+        console.log(comments);
+        doc.ref.set({ comments, commentCount: doc.data().commentCount + 1 });
+      }
+    })
     .then(() => {
-      return res.status(200).json({ message: "Comment Added" });
+      return res.status(201).json({ message: "New comment added." });
     })
     .catch((err) => {
       return res.status(500).json({ error: err.code });

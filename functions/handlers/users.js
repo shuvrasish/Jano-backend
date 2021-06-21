@@ -15,12 +15,36 @@ exports.getAllUsers = (req, res) => {
     });
 };
 
-exports.getOneUser = (req, res) => {
-  const email = req.body.email;
-  const userRef = db.collection("Users").doc(email);
-  userRef
+exports.getSelectedCategories = () => {
+  const email = req.params.email;
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
+      const { categories } = doc.data();
+      if (!categories) {
+        console.log("Categories field not present for current user.");
+        return res.send([]);
+      }
+      return res.send(categories);
+    })
+    .then(() => {
+      return res.status(200).json({ message: "Preferred categories fetched." });
+    })
+    .catch((err) => {
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.getOneUser = (req, res) => {
+  const email = req.params.email;
+  db.collection("Users")
+    .doc(email)
+    .get()
+    .then((doc) => {
+      if (!doc.exists) {
+        return res.status(400).json({ message: "User doesn't exist." });
+      }
       return res.status(200).json({ ...doc.data() });
     })
     .catch((err) => {
@@ -29,8 +53,8 @@ exports.getOneUser = (req, res) => {
 };
 
 exports.addCategoryPref = (req, res) => {
-  const category = req.body.category;
-  const email = req.body.email;
+  const category = req.params.category;
+  const email = req.params.email;
   const userRef = db.collection("Users").doc(email);
   userRef
     .get()
@@ -54,8 +78,8 @@ exports.addCategoryPref = (req, res) => {
 };
 
 exports.removeCategoryPref = (req, res) => {
-  const email = req.body.email;
-  const category = req.body.category;
+  const email = req.params.email;
+  const category = req.params.category;
 
   const userRef = db.collection("Users").doc(email);
   userRef
@@ -87,30 +111,9 @@ exports.removeCategoryPref = (req, res) => {
     });
 };
 
-exports.getSelectedCategories = () => {
-  const email = req.body.email;
-  db.collection("Users")
-    .doc(email)
-    .get()
-    .then((doc) => {
-      const { categories } = doc.data();
-      if (!categories) {
-        console.log("Categories field not present for current user.");
-        return res.send([]);
-      }
-      return res.send(categories);
-    })
-    .then(() => {
-      return res.status(200).json({ message: "Preferred categories fetched." });
-    })
-    .catch((err) => {
-      return res.status(500).json({ error: err.code });
-    });
-};
-
 exports.setLangPref = (req, res) => {
-  const email = req.body.email;
-  const lang = req.body.lang;
+  const email = req.params.email;
+  const lang = req.params.lang;
   const userRef = db.collection("Users").doc(email);
   userRef
     .set(
@@ -128,7 +131,7 @@ exports.setLangPref = (req, res) => {
 };
 
 exports.getLangPref = (req, res) => {
-  const email = req.body.email;
+  const email = req.params.email;
   const userRef = db.collection("Users").doc(email);
   userRef
     .get()
@@ -151,8 +154,8 @@ exports.getLangPref = (req, res) => {
 };
 
 exports.createUserDoc = (req, res) => {
-  const name = req.body.name;
-  const email = req.body.email;
+  const name = req.params.name;
+  const email = req.aarams.email;
   db.collection("Users")
     .doc(email)
     .set(
@@ -171,7 +174,7 @@ exports.createUserDoc = (req, res) => {
 };
 
 exports.handleShareLoggedIn = (req, res) => {
-  const email = req.body.email;
+  const email = req.params.email;
   db.collection("Users")
     .doc(email)
     .update({
@@ -200,7 +203,7 @@ exports.handleShareNotLoggedIn = (req, res) => {
 };
 
 exports.getShares = (req, res) => {
-  const email = req.body.email;
+  const email = req.params.email;
   const userRef = database.collection("Users").doc(email);
   userRef
     .get()
@@ -218,7 +221,7 @@ exports.getShares = (req, res) => {
 };
 
 exports.getFeedbacks = (req, res) => {
-  const email = req.body.email;
+  const email = req.params.email;
   const userRef = database.collection("Users").doc(email);
   userRef
     .get()

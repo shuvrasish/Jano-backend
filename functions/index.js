@@ -31,6 +31,8 @@ const {
 } = require("./handlers/analytics");
 const { getTrends } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
+const { getData } = require("./test");
+const { db, admin } = require("./config/firebase-config");
 
 app.use(cors({ origin: true }));
 app.use(bodyParser.json());
@@ -71,4 +73,14 @@ app.get("/getAllCategories", getAllCategoryData);
 //trends
 app.get("/getTrends", getTrends);
 
+//test
+app.get("/test", getData);
+
 exports.api = functions.region("asia-south1").https.onRequest(app);
+
+// exports.schedFunc = functions.pubsub.schedule("* * * * *").onRun((context) => {
+//   db.collection("test").doc("1").update({
+//     value: admin.firestore.Timestamp.now(),
+//   });
+//   return console.log("Successfully updated value");
+// });

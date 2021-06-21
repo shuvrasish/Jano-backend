@@ -23,7 +23,6 @@ exports.getSelectedCategories = () => {
     .then((doc) => {
       const { categories } = doc.data();
       if (!categories) {
-        console.log("Categories field not present for current user.");
         return res.send([]);
       }
       return res.send(categories);
@@ -43,7 +42,7 @@ exports.getOneUser = (req, res) => {
     .get()
     .then((doc) => {
       if (!doc.exists) {
-        return res.status(400).json({ message: "User doesn't exist." });
+        return res.status(404).json({ message: "User doesn't exist." });
       }
       return res.status(200).json({ ...doc.data() });
     })
@@ -60,7 +59,7 @@ exports.addCategoryPref = (req, res) => {
     .get()
     .then((doc) => {
       if (!doc.exists) {
-        return res.status(400).json({ message: "User not found!" });
+        return res.status(404).json({ message: "User not found!" });
       }
       const { categories } = doc.data();
       if (!categories) {
@@ -86,7 +85,7 @@ exports.removeCategoryPref = (req, res) => {
     .get()
     .then((doc) => {
       if (!doc.exists) {
-        return res.status(400).json({ message: "User not found!" });
+        return res.status(404).json({ message: "User not found!" });
       }
       let { categories } = doc.data();
       if (categories.includes(category)) {
@@ -137,7 +136,7 @@ exports.getLangPref = (req, res) => {
     .get()
     .then((doc) => {
       if (!doc.exists) {
-        return res.status(400).json({ message: "User not found!" });
+        return res.status(404).json({ message: "User not found!" });
       }
       const { language } = doc.data();
       if (language) {
@@ -155,7 +154,7 @@ exports.getLangPref = (req, res) => {
 
 exports.createUserDoc = (req, res) => {
   const name = req.params.name;
-  const email = req.aarams.email;
+  const email = req.params.email;
   db.collection("Users")
     .doc(email)
     .set(
@@ -212,7 +211,7 @@ exports.getShares = (req, res) => {
       if (share) {
         return res.status(200).send(share);
       } else {
-        return res.status(400).json({ message: "Share field empty." });
+        return res.status(404).json({ message: "Share field empty." });
       }
     })
     .catch((err) => {
@@ -230,7 +229,7 @@ exports.getFeedbacks = (req, res) => {
       if (feedback) {
         return res.status(200).send(feedback);
       } else {
-        return res.status(400).json({ message: "Feedback field empty." });
+        return res.status(404).json({ message: "Feedback field empty." });
       }
     })
     .catch((err) => {

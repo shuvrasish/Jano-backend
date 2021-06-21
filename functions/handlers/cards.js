@@ -20,6 +20,7 @@ exports.getCardsWithoutLogin = (req, res) => {
 };
 
 exports.getCardsWithLogin = (req, res) => {
+  //TODO: get limited cards
   db.collection("CardsWithLogin")
     .orderBy("id", "asc")
     .get()

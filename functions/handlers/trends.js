@@ -12,6 +12,7 @@ exports.getTrends = (req, res) => {
       results = results.default.trendingSearchesDays[0].trendingSearches.map(
         (document) => document.title.query
       );
+
       return res.status(200).send(results);
     })
     .catch((err) => {

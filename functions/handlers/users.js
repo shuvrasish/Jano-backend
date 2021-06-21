@@ -55,8 +55,8 @@ exports.getOneUser = (req, res) => {
 exports.addCategoryPref = (req, res) => {
   const category = req.params.category;
   const email = req.params.email;
-  const userRef = db.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
       if (!doc.exists) {
@@ -81,8 +81,8 @@ exports.removeCategoryPref = (req, res) => {
   const email = req.params.email;
   const category = req.params.category;
 
-  const userRef = db.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
       if (!doc.exists) {
@@ -114,8 +114,8 @@ exports.removeCategoryPref = (req, res) => {
 exports.setLangPref = (req, res) => {
   const email = req.params.email;
   const lang = req.params.lang;
-  const userRef = db.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .set(
       {
         language: lang,
@@ -132,8 +132,8 @@ exports.setLangPref = (req, res) => {
 
 exports.getLangPref = (req, res) => {
   const email = req.params.email;
-  const userRef = db.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
       if (!doc.exists) {
@@ -204,8 +204,8 @@ exports.handleShareNotLoggedIn = (req, res) => {
 
 exports.getShares = (req, res) => {
   const email = req.params.email;
-  const userRef = database.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
       const { share } = doc.data();
@@ -222,8 +222,8 @@ exports.getShares = (req, res) => {
 
 exports.getFeedbacks = (req, res) => {
   const email = req.params.email;
-  const userRef = database.collection("Users").doc(email);
-  userRef
+  db.collection("Users")
+    .doc(email)
     .get()
     .then((doc) => {
       const { feedback } = doc.data();

@@ -27,6 +27,7 @@ const {
 const {
   getCardsWithLoginAnalytics,
   getCardsWithoutLoginAnalytics,
+  getCardAnalytics,
 } = require("./handlers/analytics");
 const { getTrends } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
@@ -62,6 +63,7 @@ app.get("/getSelectedCategories/:email", getSelectedCategories);
 //analytics
 app.get("/getCardsWithLoginAnalytics", getCardsWithLoginAnalytics);
 app.get("/getCardsWithoutLoginAnalytics", getCardsWithoutLoginAnalytics);
+app.get("/getCardAnalytics/:cardid", getCardAnalytics);
 
 //categories
 app.get("/getAllCategories", getAllCategoryData);

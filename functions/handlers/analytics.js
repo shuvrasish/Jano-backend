@@ -13,7 +13,6 @@ exports.getCardsWithLoginAnalytics = (req, res) => {
     .get()
     .then((docs) => sendAnalytics(docs, res))
     .catch((err) => {
-      console.error(err);
       return res.status(500).json({ error: err.code });
     });
 };
@@ -23,7 +22,23 @@ exports.getCardsWithoutLoginAnalytics = (req, res) => {
     .get()
     .then(then((docs) => sendAnalytics(docs, res)))
     .catch((err) => {
-      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+exports.getCardAnalytics = (req, res) => {
+  const cardid = req.params.cardid;
+  db.collection("CardsWithLoginAnalytics")
+    .doc(cardid)
+    .get()
+    .then((doc) => {
+      let analytics = {};
+      if (doc.exists) {
+        analytics = { ...doc.data() };
+      }
+      return res.status(200).send(analytics);
+    })
+    .catch((err) => {
       return res.status(500).json({ error: err.code });
     });
 };

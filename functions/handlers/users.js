@@ -15,7 +15,7 @@ exports.getAllUsers = (req, res) => {
     });
 };
 
-exports.getSelectedCategories = () => {
+exports.getSelectedCategories = (req, res) => {
   const email = req.params.email;
   db.collection("Users")
     .doc(email)

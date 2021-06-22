@@ -1,4 +1,4 @@
-const db = require("../config/firebase-config");
+const { db } = require("../config/firebase-config");
 
 const sendAnalytics = (docs, res) => {
   let analytics = [];

@@ -8,6 +8,7 @@ const {
   getCardsWithLogin,
   getAllCategoryDataFromCards,
   getLikedCards,
+  getCardsWithHashtag,
 } = require("./handlers/cards");
 const { commentOnCard, getCardComments } = require("./handlers/comments");
 const {
@@ -43,6 +44,7 @@ app.get("/getCardsWithoutLogin", getCardsWithoutLogin);
 app.get("/getCardsWithLogin", getCardsWithLogin);
 app.get("/getAllCategoryDataFromCards", getAllCategoryDataFromCards); //returns an array with category and subcategory data. NOT TO BE USED ANYMORE
 app.get("/getLikedCards/:email", getLikedCards);
+app.get("/getCardsWithHashtag/:category", getCardsWithHashtag)
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);

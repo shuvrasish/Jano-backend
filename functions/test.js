@@ -1,71 +1,69 @@
 const axios = require("axios");
 const trends = require("google-trends-api");
+const wiki = require("wikijs").default;
 
-exports.getData = (req, res) => {
-  trends
-    .dailyTrends({
+// wiki()
+//   .page("Hello")
+//   .then((page) => console.log(page))
+//   .catch((err) => console.log(err));
+
+const wikiapi = async (topic) => {
+  try {
+    let page = await wiki().page(topic);
+    let summary = await page.summary();
+    // let main_image = await page.mainImage();
+    return {
+      title: page.title,
+      summary: summary,
+      // mainImage: main_image,
+      url: page.fullurl || page.canonicalurl,
+    };
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+};
+
+// wikiapi("UPSSSC PET");
+let arr = [
+  "Nelson Mandela",
+  "Parker",
+  "UPSSSC PET",
+  "Bolt",
+  "Rainbow",
+  "Crossword",
+];
+
+const getArticles = async (topics) => {
+  let articles = [];
+  for (let topic of topics) {
+    let article = await wikiapi(topic);
+    if (article) {
+      articles.push(article);
+    }
+  }
+  // console.log(articles);
+  return articles;
+};
+
+// getArticles(arr);
+
+exports.getData = async (req, res) => {
+  try {
+    let results = await trends.dailyTrends({
       geo: "IN",
       trendDate: new Date(),
       category: "all",
-    })
-    .then((results) => {
-      results = JSON.parse(results);
-      results = results.default.trendingSearchesDays[0].trendingSearches.map(
-        (document) => document.title.query
-      );
-      let articles = [];
-      let promises = [];
-      results.forEach((term, index) => {
-        let url = "https://en.wikipedia.org/w/api.php";
-
-        const params = {
-          action: "query",
-          list: "search",
-          srsearch: term,
-          format: "json",
-        };
-
-        url = url + "?origin=*";
-        Object.keys(params).forEach(function (key) {
-          url += "&" + key + "=" + params[key];
-        });
-        promises.push(
-          axios.get(url).then((response) => {
-            if (response.data.query.searchinfo.totalhits > 0) {
-              articles.push(response.data.query.search[0]);
-            }
-          })
-        );
-      });
-      Promise.all(promises).then(() => res.send(articles));
-    })
-    .catch((err) => {
-      return res.status(400).send(err);
     });
-};
 
-const getArticle = (term) => {
-  var url = "https://en.wikipedia.org/w/api.php";
+    results = JSON.parse(results);
+    results = results.default.trendingSearchesDays[0].trendingSearches.map(
+      (document) => document.title.query
+    );
 
-  var params = {
-    action: "query",
-    list: "search",
-    srsearch: term,
-    format: "json",
-  };
-
-  url = url + "?origin=*";
-  Object.keys(params).forEach(function (key) {
-    url += "&" + key + "=" + params[key];
-  });
-
-  let article = {};
-  axios
-    .get(url)
-    .then((resp) => {
-      article = resp;
-      return resp.data.query.search[0];
-    })
-    .catch((err) => console.log(err));
-  return article;
+    let articles = await getArticles(results);
+    res.status(200).send(articles);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 };

@@ -1,8 +1,11 @@
 const admin = require("firebase-admin");
 const firebase = require("firebase");
-var serviceAccount = require("./swipeekaro-firebase-adminsdk-dnc14-595c45a48e.json");
+var serviceAccount = require("./admin-sdk.json");
 
-admin.initializeApp({credential: admin.credential.cert(serviceAccount)});
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://swipeekaro.firebaseio.com",
+});
 
 const db = admin.firestore();
 

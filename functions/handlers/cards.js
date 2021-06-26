@@ -1,5 +1,4 @@
 const { db } = require("../config/firebase-config");
-const trends = require("google-trends-api");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -104,5 +103,41 @@ exports.getCardsWithHashtag = (req, res) => {
       });
     })
     .then(() => res.status(200).send(cards))
+    .catch((err) => res.status(500).json({ error: err.code }));
+};
+
+exports.getPreferredCards = (req, res) => {
+  const email = req.params.email;
+  let cats = [];
+  let results = [];
+  db.collection("Users")
+    .doc(email)
+    .get()
+    .then((doc) => {
+      const { categories } = doc.data();
+      if (categories) {
+        cats = [...categories];
+      }
+    })
+    .then(() => {
+      db.collection("CardsWithLogin")
+        .get()
+        .then((docs) => {
+          let vis = [];
+          docs.forEach((doc) => {
+            const { categories, main_category, id } = doc.data();
+            for (let category of categories) {
+              if (
+                (cats.includes(category) || cats.includes(main_category)) &&
+                !vis.includes(id)
+              ) {
+                results.push({ ...doc.data() });
+                vis.push(id);
+              }
+            }
+          });
+        })
+        .then(() => res.status(200).send(results));
+    })
     .catch((err) => res.status(500).json({ error: err.code }));
 };

@@ -3,9 +3,9 @@ const { db } = require("../config/firebase-config");
 exports.getAllCategoryData = (req, res) => {
   db.collection("category_mapping")
     .get()
-    .then((querySnapshot) => {
+    .then((docs) => {
       let category_deets = [];
-      querySnapshot.docs.forEach((doc) => {
+      docs.forEach((doc) => {
         let { Topic, main_category } = doc.data();
         category_deets.push({ Topic, main_category });
       });

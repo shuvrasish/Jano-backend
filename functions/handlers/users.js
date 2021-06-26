@@ -98,7 +98,7 @@ exports.removeCategoryPref = (req, res) => {
         );
       } else {
         return res
-          .status(400)
+          .status(404)
           .json({ message: "Category preference not found." });
       }
     })
@@ -143,7 +143,7 @@ exports.getLangPref = (req, res) => {
         return res.status(200).json({ language });
       } else {
         return res
-          .status(500)
+          .status(404)
           .json({ message: "User doesn't have a preferred language." });
       }
     })
@@ -214,9 +214,7 @@ exports.getShares = (req, res) => {
       if (share) {
         return res.status(200).json({ share });
       } else {
-        return res
-          .status(500)
-          .json({ message: "User hasn't shared anything." });
+        return res.status(200).send({ share: 0 });
       }
     })
     .catch((err) => {
@@ -237,9 +235,7 @@ exports.getFeedbacks = (req, res) => {
       if (feedback) {
         return res.status(200).json({ feedback });
       } else {
-        return res
-          .status(500)
-          .json({ message: "User hasn't submitted any feedback." });
+        return res.status(200).send({ feedback: 0 });
       }
     })
     .catch((err) => {

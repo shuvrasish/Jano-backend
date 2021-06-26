@@ -21,7 +21,8 @@
     "firebase-admin": "^9.8.0",
     "firebase-functions": "^3.14.1",
     "google-trends-api": "^4.9.2",
-    "wikijs": "^6.2.1"
+    "wikijs": "^6.2.1",
+    "wikipedia": "^1.1.1"
   },
   "devDependencies": {
     "firebase-functions-test": "^0.2.0"

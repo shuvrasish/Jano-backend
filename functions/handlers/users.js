@@ -207,15 +207,20 @@ exports.getShares = (req, res) => {
     .doc(email)
     .get()
     .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ message: "User not found!" });
+      }
       const { share } = doc.data();
       if (share) {
-        return res.status(200).send(share);
+        return res.status(200).json({ share });
       } else {
-        return res.status(404).json({ message: "Share field empty." });
+        return res
+          .status(500)
+          .json({ message: "User hasn't shared anything." });
       }
     })
     .catch((err) => {
-      res.status(500).send();
+      res.status(500).json({ error: err.code });
     });
 };
 
@@ -225,15 +230,20 @@ exports.getFeedbacks = (req, res) => {
     .doc(email)
     .get()
     .then((doc) => {
+      if (!doc.exists) {
+        return res.status(404).json({ message: "User not found!" });
+      }
       const { feedback } = doc.data();
       if (feedback) {
-        return res.status(200).send(feedback);
+        return res.status(200).json({ feedback });
       } else {
-        return res.status(404).json({ message: "Feedback field empty." });
+        return res
+          .status(500)
+          .json({ message: "User hasn't submitted any feedback." });
       }
     })
     .catch((err) => {
-      res.status(500).send(err);
+      res.status(500).json({ error: err.code });
     });
 };
 

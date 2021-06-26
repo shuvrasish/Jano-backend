@@ -30,7 +30,7 @@ const {
   getCardsWithoutLoginAnalytics,
   getCardAnalytics,
 } = require("./handlers/analytics");
-const { getTrends } = require("./handlers/trends");
+const { getTrends, getTrendingCards } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
 const { getData } = require("./test");
 const { db, admin } = require("./config/firebase-config");
@@ -44,7 +44,7 @@ app.get("/getCardsWithoutLogin", getCardsWithoutLogin);
 app.get("/getCardsWithLogin", getCardsWithLogin);
 app.get("/getAllCategoryDataFromCards", getAllCategoryDataFromCards); //returns an array with category and subcategory data. NOT TO BE USED ANYMORE
 app.get("/getLikedCards/:email", getLikedCards);
-app.get("/getCardsWithHashtag/:category", getCardsWithHashtag)
+app.get("/getCardsWithHashtag/:category", getCardsWithHashtag);
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);
@@ -74,6 +74,7 @@ app.get("/getAllCategories", getAllCategoryData);
 
 //trends
 app.get("/getTrends", getTrends);
+app.get("/getTrendingCards", getTrendingCards);
 
 //test
 app.get("/test", getData);
@@ -81,7 +82,7 @@ app.get("/test", getData);
 exports.api = functions.region("asia-south1").https.onRequest(app);
 
 // exports.schedFunc = functions.pubsub.schedule("* * * * *").onRun((context) => {
-//   db.collection("test").doc("1").update({
+//   db.collection("Trending").doc("1").update({
 //     value: admin.firestore.Timestamp.now(),
 //   });
 //   return console.log("Successfully updated value");

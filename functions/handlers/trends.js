@@ -11,6 +11,7 @@ const getArticle = async (topic) => {
     const ns = page.ns;
     const summary = await page.summary();
     const mainImage = summary.originalimage.source;
+    const coordinates = await page.coordinates();
     let categories = await page.categories();
     categories = categories.map((category) => category.split(":")[1]);
     const summ = summary.extract;
@@ -30,6 +31,7 @@ const getArticle = async (topic) => {
       webpage_url: webpage_url,
       reference: "From Wikipedia, the free encyclopedia",
       image_links: images,
+      coordinates: coordinates,
     };
   } catch (error) {
     console.log(error);

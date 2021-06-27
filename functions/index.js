@@ -37,9 +37,9 @@ const {
   setTrendingCards,
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
-const { getCards } = require("./test");
+const { test } = require("./test");
 
-app.use(cors({ origin: true }));
+app.use(cors({ origin: true })); //write frontend app url instead of  "true" (for safety)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -83,7 +83,7 @@ app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending C
 app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
-app.get("/test/:email", getCards);
+app.get("/test/", test);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

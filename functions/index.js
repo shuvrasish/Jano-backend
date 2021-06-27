@@ -38,7 +38,6 @@ const {
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
 const { getCards } = require("./test");
-const { db, admin } = require("./config/firebase-config");
 
 app.use(cors({ origin: true }));
 app.use(bodyParser.json());
@@ -88,7 +87,7 @@ app.get("/test/:email", getCards);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 
-exports.setTrendingCards = functions
+exports.setTrendingCardsSchedule = functions
   .region("asia-south1")
   .pubsub.schedule("0 0 * * *")
   .onRun(async (context) => {

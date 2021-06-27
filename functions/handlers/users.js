@@ -142,9 +142,7 @@ exports.getLangPref = (req, res) => {
       if (language) {
         return res.status(200).json({ language });
       } else {
-        return res
-          .status(404)
-          .json({ message: "User doesn't have a preferred language." });
+        return res.status(200).json({ language: null });
       }
     })
     .catch((err) => {

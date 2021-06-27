@@ -1,6 +1,6 @@
 const trends = require("google-trends-api");
 const wiki = require("wikipedia");
-const { db, firebase } = require("../config/firebase-config");
+const { db } = require("../config/firebase-config");
 
 const getArticle = async (topic) => {
   try {
@@ -50,11 +50,14 @@ const getArticles = async (topics) => {
 
 exports.getTrendingCards = async (req, res) => {
   let cards = [];
-  db.collection("Trending")
+  db.collection("CardsWithLogin")
     .get()
     .then((docs) => {
       docs.forEach((doc) => {
-        cards.push({ ...doc.data() });
+        const { trendingOn } = doc.data();
+        if (trendingOn) {
+          cards.push({ ...doc.data() });
+        }
       });
     })
     .then(() => {
@@ -84,8 +87,9 @@ exports.setTrendingCards = async (req, res) => {
       let docRef = db.collection("CardsWithLogin").doc(`${num}`);
       batch.set(docRef, {
         ...doc,
-        id: num,
-        trendingOn: firebase.firestore.FieldValue.serverTimestamp(),
+        id: num.toString(),
+        sid: num,
+        trendingOn: new Date().toISOString(),
       });
       num++;
     });

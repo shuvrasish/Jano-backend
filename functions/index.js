@@ -81,7 +81,7 @@ app.get("/getAllCategories", getAllCategoryData);
 //trends
 app.get("/getTrends", getTrends); //DO NOT USE
 app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending Cards
-app.post("/setTrendingCards", setTrendingCards);
+app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
 app.get("/test/:email", getCards);

@@ -141,3 +141,53 @@ exports.getPreferredCards = (req, res) => {
     })
     .catch((err) => res.status(500).json({ error: err.code }));
 };
+
+exports.getCards = async (req, res) => {
+  try {
+    const email = req.params.email;
+    const userRef = await db.collection("Users").doc(email).get();
+    const { categories } = userRef.data();
+    let userCats = categories;
+    const cardsRef = await db.collection("CardsWithLogin").get();
+    let vis = [];
+    let prefCards = [];
+    let normalCards = [];
+    cardsRef.forEach((card) => {
+      const { categories, main_category, id } = card.data();
+      for (let category of categories) {
+        if (
+          (userCats.includes(category) || userCats.includes(main_category)) &&
+          !vis.includes(id)
+        ) {
+          prefCards.push({ ...card.data() });
+          vis.push(id);
+        } else if (
+          (!userCats.includes(category) || !userCats.includes(main_category)) &&
+          !vis.includes(id)
+        ) {
+          normalCards.push({ ...card.data() });
+          vis.push(id);
+        }
+      }
+    });
+    let cards = [];
+    const n = normalCards.length;
+    const p = prefCards.length;
+    if (p > 0) {
+      let num = (n / p) | 0;
+      console.log(num);
+      let k = 0;
+      for (let i = 0; i < n; ++i) {
+        if (i % num === 0 && k < p) {
+          cards.push(prefCards[k++]);
+        }
+        cards.push(normalCards[i]);
+      }
+    } else {
+      cards = [...normalCards];
+    }
+    res.status(200).send({ cardsLength: cards.length, cards });
+  } catch (err) {
+    res.status(500).send({ error: err.code });
+  }
+};

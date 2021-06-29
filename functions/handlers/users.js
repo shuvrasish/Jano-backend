@@ -51,7 +51,7 @@ exports.getOneUser = (req, res) => {
     });
 };
 
-exports.addCategoryPref = (req, res) => {
+exports.addCategoryPref = async (req, res) => {
   const category = req.params.category;
   const email = req.params.email;
   db.collection("Users")
@@ -63,9 +63,9 @@ exports.addCategoryPref = (req, res) => {
       }
       const { categories } = doc.data();
       if (!categories) {
-        userRef.set({ categories: [category] }, { merge: true });
+        doc.ref.set({ categories: [category] }, { merge: true });
       } else if (!categories.includes(category)) {
-        userRef.set({ categories: [...categories, category] }, { merge: true });
+        doc.ref.set({ categories: [...categories, category] }, { merge: true });
       }
     })
     .then(() => {
@@ -90,7 +90,7 @@ exports.removeCategoryPref = (req, res) => {
       let { categories } = doc.data();
       if (categories.includes(category)) {
         const removed = categories.filter((item) => item !== category);
-        userRef.set(
+        doc.ref.set(
           {
             categories: removed,
           },

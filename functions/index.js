@@ -10,6 +10,7 @@ const {
   getLikedCards,
   getCardsWithHashtag,
   getPreferredCards,
+  getCards,
 } = require("./handlers/cards");
 const { commentOnCard, getCardComments } = require("./handlers/comments");
 const {
@@ -45,11 +46,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 //cards
 app.get("/getCardsWithoutLogin", getCardsWithoutLogin);
-app.get("/getCardsWithLogin", getCardsWithLogin);
+app.get("/getCardsWithLogin", getCardsWithLogin); //NOT REQUIRED ANYMORE
 app.get("/getAllCategoryDataFromCards", getAllCategoryDataFromCards); //returns an array with category and subcategory data. NOT TO BE USED ANYMORE
 app.get("/getLikedCards/:email", getLikedCards);
 app.get("/getCardsWithHashtag/:category", getCardsWithHashtag);
-app.get("/getPreferredCards/:email", getPreferredCards);
+app.get("/getPreferredCards/:email", getPreferredCards); //NOT REQUIRED ANYMORE
+app.get("/getCards/:email", getCards); //returns preferred cards and normal cards in proper order (use this to get the cards for main window)
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);
@@ -83,7 +85,7 @@ app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending C
 app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
-app.get("/test/", test);
+app.get("/test", test);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

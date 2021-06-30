@@ -12,7 +12,11 @@ const {
   getPreferredCards,
   getCards,
 } = require("./handlers/cards");
-const { commentOnCard, getCardComments } = require("./handlers/comments");
+const {
+  commentOnCard,
+  getCardComments,
+  deleteComment,
+} = require("./handlers/comments");
 const {
   getAllUsers,
   getOneUser,
@@ -56,6 +60,7 @@ app.get("/getCards/:email", getCards); //returns preferred cards and normal card
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);
 app.get("/getCardComments/:cardid", getCardComments);
+app.delete("/comment/:cardid/:email/:commentid", deleteComment);
 
 //users
 app.get("/getAllUsers", getAllUsers);

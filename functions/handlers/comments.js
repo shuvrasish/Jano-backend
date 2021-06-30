@@ -5,7 +5,7 @@ exports.commentOnCard = (req, res) => {
     return res.status(400).json({ comment: "Must not be empty" });
   const email = req.params.email;
   const cardid = req.params.cardid;
-  const comment = {
+  let comment = {
     body: req.body.message,
     createdAt: new Date().toISOString(),
     user: email,
@@ -20,21 +20,49 @@ exports.commentOnCard = (req, res) => {
         db.collection("comments")
           .doc(cardid)
           .set({
-            comments: [comment],
+            comments: [{ ...comment, commentid: 0 }],
             commentCount: 1,
           });
       } else {
-        let { comments } = doc.data();
-        comments.push(comment);
-        doc.ref.set({ comments, commentCount: doc.data().commentCount + 1 });
+        let { comments, commentCount } = doc.data();
+        doc.ref.set({
+          comments: [...comments, { ...comment, commentid: commentCount }],
+          commentCount: commentCount + 1,
+        });
       }
     })
-    .then(() => {
-      return res.status(201).json({ message: "New comment added." });
+    .then(() => res.status(201).json({ message: "New comment added." }))
+    .catch((err) => res.status(500).json({ error: err.code }));
+};
+
+exports.deleteComment = (req, res) => {
+  const email = req.params.email;
+  const cardid = req.params.cardid;
+  const commentid = req.params.commentid;
+  db.collection("comments")
+    .doc(cardid)
+    .get()
+    .then((doc) => {
+      let { comments } = doc.data();
+      let idx = -1;
+      comments.forEach((comment, index) => {
+        if (
+          comment.user === email &&
+          comment.commentid === parseInt(commentid, 10)
+        ) {
+          idx = index;
+        }
+      });
+      if (idx != -1) {
+        comments.splice(idx, 1);
+      }
+      comments.forEach((comment, index) => {
+        comment.commentid = index;
+      });
+      doc.ref.set({ comments, commentCount: comments.length });
     })
-    .catch((err) => {
-      return res.status(500).json({ error: err.code });
-    });
+    .then(() => res.status(201).json({ message: "Comment Deleted." }))
+    .catch((err) => res.status(500).json({ error: err.code }));
 };
 
 exports.getCardComments = (req, res) => {

@@ -146,27 +146,43 @@ exports.getCards = async (req, res) => {
   try {
     const email = req.params.email;
     const userRef = await db.collection("Users").doc(email).get();
-    const { categories } = userRef.data();
-    let userCats = categories;
-    const cardsRef = await db.collection("CardsWithLogin").get();
+    const { categories, liked, disliked } = userRef.data();
+    let seen = [];
+    if (liked) {
+      seen = [...liked];
+    }
+    if (disliked) {
+      seen = [...seen, ...disliked];
+    }
+    let userCats = [];
+    if (categories) {
+      userCats = [...categories];
+    }
+    const cardsRef = await db
+      .collection("CardsWithLogin")
+      .limit(40 + seen.length)
+      .get();
     let vis = [];
     let prefCards = [];
     let normalCards = [];
     cardsRef.forEach((card) => {
       const { categories, main_category, id } = card.data();
-      for (let category of categories) {
-        if (
-          (userCats.includes(category) || userCats.includes(main_category)) &&
-          !vis.includes(id)
-        ) {
-          prefCards.push({ ...card.data() });
-          vis.push(id);
-        } else if (
-          (!userCats.includes(category) || !userCats.includes(main_category)) &&
-          !vis.includes(id)
-        ) {
-          normalCards.push({ ...card.data() });
-          vis.push(id);
+      if (!seen.includes(id)) {
+        for (let category of categories) {
+          if (
+            (userCats.includes(category) || userCats.includes(main_category)) &&
+            !vis.includes(id)
+          ) {
+            prefCards.push({ ...card.data() });
+            vis.push(id);
+          } else if (
+            (!userCats.includes(category) ||
+              !userCats.includes(main_category)) &&
+            !vis.includes(id)
+          ) {
+            normalCards.push({ ...card.data() });
+            vis.push(id);
+          }
         }
       }
     });
@@ -175,7 +191,6 @@ exports.getCards = async (req, res) => {
     const p = prefCards.length;
     if (p > 0) {
       let num = (n / p) | 0;
-      console.log(num);
       let k = 0;
       for (let i = 0; i < n; ++i) {
         if (i % num === 0 && k < p) {

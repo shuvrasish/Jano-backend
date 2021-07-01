@@ -53,6 +53,7 @@ const getArticles = async (topics) => {
 exports.getTrendingCards = async (req, res) => {
   let cards = [];
   db.collection("CardsWithLogin")
+    .orderBy("trendingOn", "desc")
     .get()
     .then((docs) => {
       docs.forEach((doc) => {
@@ -105,7 +106,7 @@ exports.setTrendingCards = async (req, res) => {
 exports.getTrends = (req, res) => {
   trends
     .dailyTrends({
-      geo: "IN",
+      geo: "IND",
       trendDate: new Date(),
       category: "all",
     })

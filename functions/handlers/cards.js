@@ -1,4 +1,6 @@
 const { db } = require("../config/firebase-config");
+const axios = require("axios").default;
+const wiki = require("wikipedia");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -158,43 +160,61 @@ exports.getCards = async (req, res) => {
     if (categories) {
       userCats = [...categories];
     }
+    const lastSeen = Math.max(...seen);
     const cardsRef = await db
       .collection("CardsWithLogin")
-      .limit(40 + seen.length)
+      .where("sid", ">", lastSeen)
+      .limit(40)
       .get();
     let vis = [];
     let prefCards = [];
     let normalCards = [];
     cardsRef.forEach((card) => {
       const { categories, main_category, id } = card.data();
-      if (!seen.includes(id)) {
-        for (let category of categories) {
-          if (
-            (userCats.includes(category) || userCats.includes(main_category)) &&
-            !vis.includes(id)
-          ) {
-            prefCards.push({ ...card.data() });
-            vis.push(id);
-          } else if (
-            (!userCats.includes(category) ||
-              !userCats.includes(main_category)) &&
-            !vis.includes(id)
-          ) {
-            normalCards.push({ ...card.data() });
-            vis.push(id);
-          }
+      for (let category of categories) {
+        if (
+          (userCats.includes(category) || userCats.includes(main_category)) &&
+          !vis.includes(id)
+        ) {
+          prefCards.push({ ...card.data() });
+          vis.push(id);
+        } else if (
+          (!userCats.includes(category) || !userCats.includes(main_category)) &&
+          !vis.includes(id)
+        ) {
+          normalCards.push({ ...card.data() });
+          vis.push(id);
         }
       }
+    });
+    let quoteCards = [];
+    const quoteCardsRef = await db.collection("quotes").limit(20).get();
+    quoteCardsRef.forEach((card) => {
+      const { categories, author, body, type, id, mainImage } = card.data();
+      quoteCards.push({
+        heading: author,
+        summary: body,
+        type: type,
+        id: id,
+        categories: categories,
+        mainImage: mainImage,
+      });
     });
     let cards = [];
     const n = normalCards.length;
     const p = prefCards.length;
+    const q = quoteCards.length;
     if (p > 0) {
-      let num = (n / p) | 0;
+      let numPref = (n / p) | 0;
+      let numQuotes = (n / q) | 0;
       let k = 0;
+      let m = 0;
       for (let i = 0; i < n; ++i) {
-        if (i % num === 0 && k < p) {
+        if (i % numPref === 0 && k < p) {
           cards.push(prefCards[k++]);
+        }
+        if (i % numQuotes === 0 && m < q) {
+          cards.push(quoteCards[m++]);
         }
         cards.push(normalCards[i]);
       }
@@ -204,5 +224,29 @@ exports.getCards = async (req, res) => {
     res.status(200).send({ cardsLength: cards.length, cards });
   } catch (err) {
     res.status(500).send({ error: err.code });
+  }
+};
+
+exports.setQuotes = async (req, res) => {
+  try {
+    let response = await axios.get("https://api.quotable.io/random");
+    const page = await wiki.page(response.data.author);
+    const summary = await page.summary();
+    const mainImage = summary.originalimage.source;
+    let quote = {
+      author: response.data.author,
+      body: response.data.content,
+      type: "quote",
+      categories: [...response.data.tags],
+      id: response.data._id,
+      mainImage: mainImage,
+    };
+    await db
+      .collection("quotes")
+      .doc(quote.id)
+      .set({ ...quote }, { merge: true });
+    res.status(200).send({ message: "Changes Saved!" });
+  } catch (err) {
+    res.status(500).send(err);
   }
 };

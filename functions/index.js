@@ -11,6 +11,7 @@ const {
   getCardsWithHashtag,
   getPreferredCards,
   getCards,
+  setQuotes,
 } = require("./handlers/cards");
 const {
   commentOnCard,
@@ -91,6 +92,7 @@ app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
 app.get("/test", test);
+app.post("/setQuotes", setQuotes);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 
@@ -100,4 +102,12 @@ exports.setTrendingCardsSchedule = functions
   .onRun(async (context) => {
     await setTrendingCards();
     return console.log("Successfully updated value");
+  });
+
+exports.setQuotesSchedule = functions
+  .region("asia-south1")
+  .pubsub.schedule("0 */6 * * *")
+  .onRun(async (context) => {
+    await setQuotes();
+    return console.log("Successfully set quotes!");
   });

@@ -148,7 +148,8 @@ exports.getCards = async (req, res) => {
   try {
     const email = req.params.email;
     const userRef = await db.collection("Users").doc(email).get();
-    const { categories, liked, disliked } = userRef.data();
+    const { categories, liked, disliked, likedQuotes, dislikedQuotes } =
+      userRef.data();
     let seen = [];
     if (liked) {
       seen = [...liked];
@@ -160,12 +161,21 @@ exports.getCards = async (req, res) => {
     if (categories) {
       userCats = [...categories];
     }
+    let cardsRef;
     const lastSeen = Math.max(...seen);
-    const cardsRef = await db
-      .collection("CardsWithLogin")
-      .where("sid", ">", lastSeen)
-      .limit(40)
-      .get();
+    if (seen.length > 0 && seen.length < 10) {
+      cardsRef = await db
+        .collection("CardsWithLogin")
+        .where("sid", "not-in", seen)
+        .limit(40)
+        .get();
+    } else {
+      cardsRef = await db
+        .collection("CardsWithLogin")
+        .where("sid", ">", lastSeen)
+        .limit(40)
+        .get();
+    }
     let vis = [];
     let prefCards = [];
     let normalCards = [];
@@ -188,17 +198,29 @@ exports.getCards = async (req, res) => {
       }
     });
     let quoteCards = [];
-    const quoteCardsRef = await db.collection("quotes").limit(20).get();
+    let seenQuotes = [];
+    if (likedQuotes) {
+      seenQuotes = [...likedQuotes];
+    }
+    if (dislikedQuotes) {
+      seenQuotes = [...seenQuotes, dislikedQuotes];
+    }
+    const quoteCardsRef = await db
+      .collection("quotes")
+      .limit(20 + seenQuotes.length)
+      .get();
     quoteCardsRef.forEach((card) => {
       const { categories, author, body, type, id, mainImage } = card.data();
-      quoteCards.push({
-        heading: author,
-        summary: body,
-        type: type,
-        id: id,
-        categories: categories,
-        mainImage: mainImage,
-      });
+      if (!seenQuotes.includes(id)) {
+        quoteCards.push({
+          heading: author,
+          summary: body,
+          type: type,
+          id: id,
+          categories: categories,
+          mainImage: mainImage,
+        });
+      }
     });
     let cards = [];
     const n = normalCards.length;
@@ -240,6 +262,7 @@ exports.setQuotes = async (req, res) => {
       categories: [...response.data.tags],
       id: response.data._id,
       mainImage: mainImage,
+      createdOn: new Date().toISOString(),
     };
     await db
       .collection("quotes")

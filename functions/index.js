@@ -31,6 +31,8 @@ const {
   getShares,
   getFeedbacks,
   getSelectedCategories,
+  dislikeQuote,
+  likeQuote,
 } = require("./handlers/users");
 const {
   getCardsWithLoginAnalytics,
@@ -57,6 +59,10 @@ app.get("/getLikedCards/:email", getLikedCards);
 app.get("/getCardsWithHashtag/:category", getCardsWithHashtag);
 app.get("/getPreferredCards/:email", getPreferredCards); //NOT REQUIRED ANYMORE
 app.get("/getCards/:email", getCards); //returns preferred cards and normal cards in proper order (use this to get the cards for main window)
+
+//quotes
+app.post("/dislikeQuote/:quoteid/:email", dislikeQuote);
+app.post("/likeQuote/:quoteid/:email", likeQuote);
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);
@@ -91,8 +97,8 @@ app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending C
 app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
-app.get("/test", test);
-app.post("/setQuotes", setQuotes);
+app.post("/test", test); //DO NOT USE
+// app.post("/setQuotes", setQuotes);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

@@ -241,6 +241,83 @@ exports.getFeedbacks = (req, res) => {
     });
 };
 
+exports.likeQuote = async (req, res) => {
+  try {
+    const quoteid = req.params.quoteid;
+    const email = req.params.email;
+    let docRef = await db.collection("QuotesAnalytics").doc(quoteid).get();
+    if (!docRef.exists) {
+      await db
+        .collection("QuotesAnalytics")
+        .doc(quoteid)
+        .set({
+          likes: [email],
+          totalLikes: 1,
+        });
+    } else {
+      const { likes, totalLikes } = docRef.data();
+      if (likes && !likes.includes(email)) {
+        await docRef.ref.set(
+          { likes: [...likes, email], totalLikes: totalLikes + 1 },
+          { merge: true }
+        );
+      }
+      docRef = await db.collection("Users").doc(email).get();
+      const { likedQuotes, totalLikedQuotes } = docRef.data();
+      if (likedQuotes) {
+        await docRef.ref.set(
+          {
+            likedQuotes: [...likedQuotes, quoteid],
+            totalLikedQuotes: totalLikedQuotes + 1,
+          },
+          { merge: true }
+        );
+      } else {
+        await docRef.ref.set(
+          {
+            likedQuotes: [quoteid],
+            totalLikedQuotes: 1,
+          },
+          { merge: true }
+        );
+      }
+    }
+
+    res.status(201).send({ message: "Liked quote added." });
+  } catch (err) {
+    res.status(500).send({ error: err.code });
+  }
+};
+
+exports.dislikeQuote = async (req, res) => {
+  try {
+    const quoteid = req.params.quoteid;
+    const email = req.params.email;
+    const docRef = await db.collection("Users").doc(email).get();
+    const { dislikedQuotes, totalDislikedQuotes } = docRef.data();
+    if (dislikedQuotes) {
+      await docRef.ref.set(
+        {
+          dislikedQuotes: [...dislikedQuotes, quoteid],
+          totalDislikedQuotes: totalDislikedQuotes + 1,
+        },
+        { merge: true }
+      );
+    } else {
+      await docRef.ref.set(
+        {
+          dislikedQuotes: [quoteid],
+          totalDislikedQuotes: 1,
+        },
+        { merge: true }
+      );
+    }
+    res.status(201).send({ message: "Disliked quote added." });
+  } catch (err) {
+    res.status(500).send({ error: err.code });
+  }
+};
+
 exports.getAuthenticatedUser = (req, res) => {
   const user = admin.auth().currentUser;
   if (!user) {

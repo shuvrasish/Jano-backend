@@ -32,6 +32,7 @@ const getArticle = async (topic) => {
       reference: "From Wikipedia, the free encyclopedia",
       image_links: images,
       coordinates: coordinates,
+      createdOn: new Date().toISOString(),
     };
   } catch (error) {
     console.log(error);

@@ -249,6 +249,22 @@ exports.getCards = async (req, res) => {
   }
 };
 
+exports.getQuotes = (req, res) => {
+  db.collection("quotes")
+    .orderBy("createdOn", "desc")
+    .limit(100)
+    .get()
+    .then((docs) => {
+      let quotes = [];
+      docs.forEach((doc) => {
+        quotes.push({ ...doc.data() });
+      });
+      return quotes;
+    })
+    .then((quotes) => res.status(200).send(quotes))
+    .catch((err) => res.status(500).send(err));
+};
+
 exports.setQuotes = async (req, res) => {
   try {
     let response = await axios.get("https://api.quotable.io/random");

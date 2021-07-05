@@ -12,6 +12,7 @@ const {
   getPreferredCards,
   getCards,
   setQuotes,
+  getQuotes,
 } = require("./handlers/cards");
 const {
   commentOnCard,
@@ -63,6 +64,7 @@ app.get("/getCards/:email", getCards); //returns preferred cards and normal card
 //quotes
 app.post("/dislikeQuote/:quoteid/:email", dislikeQuote);
 app.post("/likeQuote/:quoteid/:email", likeQuote);
+app.get("/getQuotes", getQuotes); //get latest 100 quotes
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);

@@ -51,7 +51,6 @@ exports.getAllCategoryDataFromCards = (req, res) => {
           };
         }
       });
-
       return res.status(200).send(category_deets);
     })
     .catch((err) => console.error(err));
@@ -60,35 +59,49 @@ exports.getAllCategoryDataFromCards = (req, res) => {
 exports.getLikedCards = (req, res) => {
   const email = req.params.email;
   let likedNumbers = [];
-  db.collection("Users")
-    .doc(email)
+  let likedQuotesNumbers = [];
+  db.doc(`Users/${email}`)
     .get()
-    .then((doc) => {
-      const { liked } = doc.data();
-      if (liked) likedNumbers = liked;
+    .then((user) => {
+      const { liked, likedQuotes } = user.data();
+      if (liked) {
+        likedNumbers = [...liked];
+      }
+      if (likedQuotes) {
+        likedQuotesNumbers = [...likedQuotes];
+      }
     })
-    .catch((err) => res.status(500).json({ error: err.code }));
-  let likedCards = [];
-  db.collection("CardsWithLogin")
-    .get()
-    .then((docs) => {
-      docs.forEach((doc) => {
-        const { id } = doc.data();
-        if (likedNumbers.includes(id)) {
-          likedCards.push({ ...doc.data() });
-        }
+    .then(() => {
+      let likedCards = [];
+      let likedQuotesCards = [];
+      let cards = [];
+      let p = [];
+      likedNumbers.forEach((id) => {
+        p.push(
+          db
+            .doc(`CardsWithLogin/${id}`)
+            .get()
+            .then((card) => {
+              likedCards.push({ ...card.data() });
+            })
+        );
       });
-      //for chronological order
-      let result = [];
-      likedNumbers.forEach((num) => {
-        let card = likedCards.find((c) => c.id === num);
-        result.push(card);
+      likedQuotesNumbers.forEach((id) => {
+        p.push(
+          db
+            .doc(`quotes/${id}`)
+            .get()
+            .then((card) => {
+              likedQuotesCards.push({ ...card.data() });
+            })
+        );
       });
-      result.reverse();
-      return result;
+      Promise.all(p).then(() => {
+        cards = [...likedCards, ...likedQuotesCards];
+        return res.status(200).send(cards);
+      });
     })
-    .then((result) => res.status(200).send(result))
-    .catch((err) => res.status(500).json({ error: err.code }));
+    .catch((err) => res.status(500).send(err));
 };
 
 exports.getCardsWithHashtag = (req, res) => {
@@ -162,7 +175,6 @@ exports.getCards = async (req, res) => {
       userCats = [...categories];
     }
     let cardsRef;
-    const lastSeen = Math.max(...seen);
     if (seen.length > 0 && seen.length < 10) {
       cardsRef = await db
         .collection("CardsWithLogin")
@@ -172,8 +184,7 @@ exports.getCards = async (req, res) => {
     } else {
       cardsRef = await db
         .collection("CardsWithLogin")
-        .where("sid", ">", lastSeen)
-        .limit(40)
+        .limit(40 + seen.length)
         .get();
     }
     let vis = [];
@@ -181,19 +192,22 @@ exports.getCards = async (req, res) => {
     let normalCards = [];
     cardsRef.forEach((card) => {
       const { categories, main_category, id } = card.data();
-      for (let category of categories) {
-        if (
-          (userCats.includes(category) || userCats.includes(main_category)) &&
-          !vis.includes(id)
-        ) {
-          prefCards.push({ ...card.data() });
-          vis.push(id);
-        } else if (
-          (!userCats.includes(category) || !userCats.includes(main_category)) &&
-          !vis.includes(id)
-        ) {
-          normalCards.push({ ...card.data() });
-          vis.push(id);
+      if (!seen.includes(id)) {
+        for (let category of categories) {
+          if (
+            (userCats.includes(category) || userCats.includes(main_category)) &&
+            !vis.includes(id)
+          ) {
+            prefCards.push({ ...card.data() });
+            vis.push(id);
+          } else if (
+            (!userCats.includes(category) ||
+              !userCats.includes(main_category)) &&
+            !vis.includes(id)
+          ) {
+            normalCards.push({ ...card.data() });
+            vis.push(id);
+          }
         }
       }
     });

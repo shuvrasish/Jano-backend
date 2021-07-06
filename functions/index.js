@@ -99,7 +99,7 @@ app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending C
 app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //test
-app.post("/test", test); //DO NOT USE
+app.get("/test/:email", test); //DO NOT USE
 // app.post("/setQuotes", setQuotes);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);

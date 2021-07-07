@@ -161,8 +161,14 @@ exports.getCards = async (req, res) => {
   try {
     const email = req.params.email;
     const userRef = await db.collection("Users").doc(email).get();
-    const { categories, liked, disliked, likedQuotes, dislikedQuotes } =
-      userRef.data();
+    const {
+      categories,
+      liked,
+      disliked,
+      likedQuotes,
+      dislikedQuotes,
+      attemptedQuiz,
+    } = userRef.data();
     let seen = [];
     if (liked) {
       seen = [...liked];
@@ -236,21 +242,47 @@ exports.getCards = async (req, res) => {
         });
       }
     });
+
+    let quizCards = [];
+    let seenQuiz = [];
+    if (attemptedQuiz) {
+      attemptedQuiz.forEach((quiz) => {
+        seenQuiz.push(quiz.quizid);
+      });
+    }
+    const quizCardsRef = await db
+      .collection("quiz")
+      .limit(seenQuiz.length + 20)
+      .get();
+
+    quizCardsRef.forEach((doc) => {
+      const quizid = doc.id;
+      if (!seenQuiz.includes(quizid)) {
+        quizCards.push({ ...doc.data() });
+      }
+    });
+
     let cards = [];
     const n = normalCards.length;
     const p = prefCards.length;
     const q = quoteCards.length;
+    const qz = quizCards.length;
     if (p > 0) {
       let numPref = (n / p) | 0;
       let numQuotes = (n / q) | 0;
-      let k = 0;
-      let m = 0;
+      let numQuiz = (n / qz) | 0;
+      let k = 0; //for preferred
+      let m = 0; //for quotes
+      let o = 0; //for quiz
       for (let i = 0; i < n; ++i) {
         if (i % numPref === 0 && k < p) {
           cards.push(prefCards[k++]);
         }
         if (i % numQuotes === 0 && m < q) {
           cards.push(quoteCards[m++]);
+        }
+        if (i % numQuiz === 0 && o < qz) {
+          cards.push(quizCards[o++]);
         }
         cards.push(normalCards[i]);
       }

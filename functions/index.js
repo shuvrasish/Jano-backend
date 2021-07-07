@@ -47,6 +47,7 @@ const {
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
 const { test } = require("./test");
+const { postQuiz, attemptQuiz } = require("./handlers/quiz");
 
 app.use(cors({ origin: true })); //write frontend app url instead of  "true" (for safety)
 app.use(bodyParser.json());
@@ -97,6 +98,10 @@ app.get("/getAllCategories", getAllCategoryData);
 app.get("/getTrends", getTrends); //DO NOT USE
 app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending Cards
 app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
+
+//quiz
+app.post("/postQuiz/:email", postQuiz);
+app.post("/attemptQuiz/:email/:quizid/:userans", attemptQuiz);
 
 //test
 app.get("/test/:email", test); //DO NOT USE

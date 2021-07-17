@@ -262,27 +262,27 @@ exports.likeQuote = async (req, res) => {
           { merge: true }
         );
       }
-      docRef = await db.collection("Users").doc(email).get();
-      const { likedQuotes, totalLikedQuotes } = docRef.data();
-      if (likedQuotes) {
-        await docRef.ref.set(
-          {
-            likedQuotes: [...likedQuotes, quoteid],
-            totalLikedQuotes: totalLikedQuotes + 1,
-          },
-          { merge: true }
-        );
-      } else {
-        await docRef.ref.set(
-          {
-            likedQuotes: [quoteid],
-            totalLikedQuotes: 1,
-          },
-          { merge: true }
-        );
-      }
     }
 
+    docRef = await db.collection("Users").doc(email).get();
+    const { likedQuotes, totalLikedQuotes } = docRef.data();
+    if (likedQuotes && !likedQuotes.includes(quoteid)) {
+      await docRef.ref.set(
+        {
+          likedQuotes: [...likedQuotes, quoteid],
+          totalLikedQuotes: totalLikedQuotes + 1,
+        },
+        { merge: true }
+      );
+    } else {
+      await docRef.ref.set(
+        {
+          likedQuotes: [quoteid],
+          totalLikedQuotes: 1,
+        },
+        { merge: true }
+      );
+    }
     res.status(201).send({ message: "Liked quote added." });
   } catch (err) {
     res.status(500).send({ error: err.code });

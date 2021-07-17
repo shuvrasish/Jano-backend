@@ -46,8 +46,13 @@ const {
   setTrendingCards,
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
-const { test } = require("./test");
-const { postQuiz, attemptQuiz } = require("./handlers/quiz");
+const { test, setDb } = require("./test");
+const {
+  postQuiz,
+  attemptQuiz,
+  getAttemptedQuizes,
+  reAttemptQuiz,
+} = require("./handlers/quiz");
 
 app.use(cors({ origin: true })); //write frontend app url instead of  "true" (for safety)
 app.use(bodyParser.json());
@@ -66,6 +71,7 @@ app.get("/getCards/:email", getCards); //returns preferred cards and normal card
 app.post("/dislikeQuote/:quoteid/:email", dislikeQuote);
 app.post("/likeQuote/:quoteid/:email", likeQuote);
 app.get("/getQuotes", getQuotes); //get latest 100 quotes
+app.post("/setQuotes", setQuotes); //not necessary
 
 //comments
 app.post("/comment/:cardid/:email", commentOnCard);
@@ -102,10 +108,12 @@ app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 //quiz
 app.post("/postQuiz/:email", postQuiz);
 app.post("/attemptQuiz/:email/:quizid/:userans", attemptQuiz);
+app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
+app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 
 //test
-app.get("/test/:email", test); //DO NOT USE
-// app.post("/setQuotes", setQuotes);
+app.get("/test", test); //DO NOT USE
+app.put("/setDb", setDb);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

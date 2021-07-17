@@ -68,6 +68,7 @@ exports.attemptQuiz = (req, res) => {
           let attempt = {
             quizid: quizid,
             isCorrect,
+            attemptNum: Number(userans),
           };
           if (attemptedQuiz) {
             doc.ref.set(
@@ -90,4 +91,59 @@ exports.attemptQuiz = (req, res) => {
       res.status(200).send({ message: "Quiz attempted successfully." })
     )
     .catch((err) => res.status(500).send(err));
+};
+
+exports.getAttemptedQuizes = async (req, res) => {
+  try {
+    const email = req.params.email;
+    let results = [];
+    const docRef = await db.doc(`Users/${email}`).get();
+    const { attemptedQuiz } = docRef.data();
+    if (attemptedQuiz) {
+      for (let attempt of attemptedQuiz) {
+        let quizRef = await db.doc(`quiz/${attempt.quizid}`).get();
+        results.push({
+          ...quizRef.data(),
+          isCorrect: attempt.isCorrect,
+          attemptNum: attempt.attemptNum,
+        });
+      }
+    }
+    res.status(200).send(results);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+};
+
+exports.reAttemptQuiz = async (req, res) => {
+  try {
+    const email = req.params.email;
+    const userans = req.params.userans;
+    const quizid = req.params.quizid;
+    let isCorrect = false;
+    const quizRef = await db.doc(`quiz/${quizid}`).get();
+    const { ans } = quizRef.data();
+    if (ans === Number(userans)) {
+      isCorrect = true;
+    }
+    const userRef = await db.doc(`Users/${email}`).get();
+    const { attemptedQuiz } = userRef.data();
+    let attempt = {
+      quizid: quizid,
+      isCorrect,
+      attemptNum: Number(userans),
+    };
+    if (attemptedQuiz) {
+      let newArr = attemptedQuiz.map((val) => {
+        if (val.quizid === quizid) {
+          return { ...attempt };
+        }
+        return val;
+      });
+      await userRef.ref.set({ attemptedQuiz: [...newArr] }, { merge: true });
+    }
+    return res.status(201).send("Successfully reattempted.");
+  } catch (err) {
+    res.status(500).send(err);
+  }
 };

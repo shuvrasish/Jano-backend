@@ -98,6 +98,8 @@ exports.getLikedCards = (req, res) => {
       });
       Promise.all(p).then(() => {
         cards = [...likedCards, ...likedQuotesCards];
+        cards = cards.filter(Boolean);
+        cards = cards.filter((card) => Object.entries(card).length !== 0);
         return res.status(200).send(cards);
       });
     })
@@ -252,43 +254,40 @@ exports.getCards = async (req, res) => {
     }
     const quizCardsRef = await db
       .collection("quiz")
-      .limit(seenQuiz.length + 20)
+      .limit(seenQuiz.length + 15)
       .get();
 
     quizCardsRef.forEach((doc) => {
       const quizid = doc.id;
-      if (!seenQuiz.includes(quizid)) {
+      const { cardid } = doc.data();
+      if (!seenQuiz.includes(quizid) && likedCards.includes(cardid)) {
         quizCards.push({ ...doc.data() });
       }
     });
-
     let cards = [];
     const n = normalCards.length;
     const p = prefCards.length;
     const q = quoteCards.length;
     const qz = quizCards.length;
-    if (p > 0) {
-      let numPref = (n / p) | 0;
-      let numQuotes = (n / q) | 0;
-      let numQuiz = (n / qz) | 0;
-      let k = 0; //for preferred
-      let m = 0; //for quotes
-      let o = 0; //for quiz
-      for (let i = 0; i < n; ++i) {
-        if (i % numPref === 0 && k < p) {
-          cards.push(prefCards[k++]);
-        }
-        if (i % numQuotes === 0 && m < q) {
-          cards.push(quoteCards[m++]);
-        }
-        if (i % numQuiz === 0 && o < qz) {
-          cards.push(quizCards[o++]);
-        }
-        cards.push(normalCards[i]);
+    let numPref = (n / p) | 0;
+    let numQuotes = (n / q) | 0;
+    let numQuiz = (n / qz) | 0;
+    let k = 0; //for preferred
+    let m = 0; //for quotes
+    let o = 0; //for quiz
+    for (let i = 0; i < n; ++i) {
+      if (i % numPref === 0 && k < p) {
+        cards.push(prefCards[k++]);
       }
-    } else {
-      cards = [...normalCards];
+      if (i % numQuotes === 0 && m < q) {
+        cards.push(quoteCards[m++]);
+      }
+      if (i % numQuiz === 0 && o < qz) {
+        cards.push(quizCards[o++]);
+      }
+      cards.push(normalCards[i]);
     }
+
     res.status(200).send({ cardsLength: cards.length, cards });
   } catch (err) {
     res.status(500).send({ error: err.code });

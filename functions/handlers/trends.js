@@ -55,7 +55,7 @@ const getArticles = async (results) => {
 exports.getTrendingCards = async (req, res) => {
   let cards = [];
   db.collection("CardsWithLogin")
-    .orderBy("trendingOn", "desc")
+    .orderBy("createdOn", "desc")
     .get()
     .then((docs) => {
       docs.forEach((doc) => {

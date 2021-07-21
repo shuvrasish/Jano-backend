@@ -1,6 +1,9 @@
 const { db } = require("../config/firebase-config");
 const axios = require("axios").default;
 const wiki = require("wikipedia");
+const Filter = require("bad-words"),
+  filter = new Filter();
+filter.addWords("sex", "sexual");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -198,22 +201,39 @@ exports.getCards = async (req, res) => {
     let vis = [];
     let prefCards = [];
     let normalCards = [];
+    let vispages = [];
     cardsRef.forEach((card) => {
-      const { categories, main_category, id } = card.data();
-      if (!seen.includes(id)) {
+      const { categories, main_category, id, heading, pageid } = card.data();
+      let isSafe = true;
+      for (let category of categories) {
+        if (category !== filter.clean(category)) {
+          isSafe = false;
+        }
+      }
+      if (
+        main_category !== filter.clean(main_category) ||
+        heading !== filter.clean(heading)
+      ) {
+        isSafe = false;
+      }
+      if (!seen.includes(id) && isSafe) {
         for (let category of categories) {
           if (
             (userCats.includes(category) || userCats.includes(main_category)) &&
-            !vis.includes(id)
+            !vis.includes(id) &&
+            !vispages.includes(pageid)
           ) {
             prefCards.push({ ...card.data() });
+            vispages.push(pageid);
             vis.push(id);
           } else if (
             (!userCats.includes(category) ||
               !userCats.includes(main_category)) &&
-            !vis.includes(id)
+            !vis.includes(id) &&
+            !vispages.includes(pageid)
           ) {
             normalCards.push({ ...card.data() });
+            vispages.push(pageid);
             vis.push(id);
           }
         }

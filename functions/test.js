@@ -1,7 +1,7 @@
 const { db, admin } = require("./config/firebase-config");
 const axios = require("axios").default;
+const trends = require("google-trends-api");
 const wiki = require("wikipedia");
-const keyword_extractor = require("keyword-extractor");
 
 const getArticle = async (topic) => {
   try {
@@ -45,12 +45,9 @@ const getArticle = async (topic) => {
 const getArticles = async (results) => {
   let articles = [];
   for (let item of results) {
-    const title = item.title;
-    if (title === filter.clean(title)) {
-      let article = await getArticle(item.pageid);
-      if (article) {
-        articles.push(article);
-      }
+    let article = await getArticle(item.pageid);
+    if (article) {
+      articles.push(article);
     }
   }
   return articles;
@@ -61,21 +58,25 @@ exports.test = async (req, res) => {
     const categoriesRef = await db.collection("category_mapping").get();
     let categories = [];
     categoriesRef.forEach((doc) => {
-      const { Topic } = doc.data();
-      const extracted = keyword_extractor.extract(Topic, {
-        language: "english",
-        remove_digits: true,
-        return_changed_case: true,
-        remove_duplicates: true,
+      const { Topic, main_category } = doc.data();
+      let keywords = Topic.split(" ");
+      keywords = [...new Set(keywords)];
+      let unnecessary = ["a", "an", "the", "and"];
+      keywords = keywords.map((keyword) => {
+        if (!unnecessary.includes(keyword.toLowerCase())) {
+          return keyword;
+        }
       });
-      categories = [...categories, ...extracted];
+      keywords = keywords.filter(Boolean);
+      // categories = [...categories, ...main_category, Topic];
+      categories = [...categories, ...keywords];
     });
     categories = [...new Set(categories)];
     categories = categories.map((category) => category.toLowerCase());
     let topics = [];
     for (let category of categories) {
       const response = await axios.get(
-        `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${category}&cmsort=timestamp&&cmtype=page&cmdir=desc&format=json&cmlimit=20`
+        `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${category}&cmsort=timestamp&cmdir=desc&format=json&cmlimit=1`
       );
       let data = response.data.query.categorymembers.map((item) => {
         if (item.title.includes("Category:")) {
@@ -90,28 +91,38 @@ exports.test = async (req, res) => {
     }
 
     let articles = await getArticles(topics);
-    res.status(200).send({ length: articles.length, array: articles });
+    res.status(200).send(articles);
   } catch (err) {
     res.status(500).send(err);
   }
 };
 
 exports.setDb = async (req, res) => {
-  db.collection("category_mapping")
+  db.collection("CardsWithLogin")
     .get()
     .then((docs) => {
       let promises = [];
       docs.forEach((doc) => {
-        const { main_category } = doc.data();
-        const newArr = main_category.map((category) => ({
-          category,
-          cmcontinue: "",
-        }));
-        promises.push(
-          doc.ref.update({
-            main_category: newArr,
-          })
-        );
+        const { trendingOn } = doc.data();
+        if (trendingOn) {
+          promises.push(
+            doc.ref.update({
+              trendingOn: admin.firestore.FieldValue.delete(),
+              createdOn: new Date().toISOString(),
+              type: "trending",
+            })
+          );
+        } else {
+          promises.push(
+            doc.ref.set(
+              {
+                type: "normal",
+                createdOn: new Date().toISOString(),
+              },
+              { merge: true }
+            )
+          );
+        }
       });
       Promise.all(promises);
     })

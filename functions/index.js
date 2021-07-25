@@ -38,6 +38,8 @@ const {
   getSelectedCategories,
   dislikeQuote,
   likeQuote,
+  likeCard,
+  dislikeCard,
 } = require("./handlers/users");
 const {
   getCardsWithLoginAnalytics,
@@ -96,6 +98,8 @@ app.get("/getShares/:email", getShares);
 app.get("/getFeedbacks/:email", getFeedbacks);
 app.get("/getAuthenticatedUser", getAuthenticatedUser);
 app.get("/getSelectedCategories/:email", getSelectedCategories);
+app.post("/likeCard/:email/:cardid", likeCard);
+app.post("/dislikeCard/:email/:cardid", dislikeCard);
 
 //analytics
 app.get("/getCardsWithLoginAnalytics", getCardsWithLoginAnalytics);

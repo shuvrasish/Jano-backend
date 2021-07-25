@@ -41,25 +41,25 @@ exports.setDb = (req, res) => {
         let newDislikedQuotes = [];
         if (liked) {
           newLiked = liked.map((el) => ({
-            cardid: el,
+            cardid: el.cardid.cardid,
             time: new Date().toISOString(),
           }));
         }
         if (disliked) {
           newDisliked = disliked.map((el) => ({
-            cardid: el,
+            cardid: el.cardid.cardid,
             time: new Date().toISOString(),
           }));
         }
         if (likedQuotes) {
           newLikedQuotes = likedQuotes.map((el) => ({
-            cardid: el,
+            quoteid: el.quoteid.cardid,
             time: new Date().toISOString(),
           }));
         }
         if (dislikedQuotes) {
           newDislikedQuotes = dislikedQuotes.map((el) => ({
-            cardid: el,
+            quoteid: el.quoteid.cardid,
             time: new Date().toISOString(),
           }));
         }

@@ -89,31 +89,17 @@ exports.setTrendingCards = async (req, res) => {
 
     let articles = await getArticles(results);
     let batch = db.batch();
+
     let docs = await db.collection("CardsWithLogin").get();
     let num = docs.size + 1;
-    await articles.forEach(async (article) => {
-      let dups = await db
-        .collection("CardsWithLogin")
-        .where("pageid", "==", article.pageid)
-        .get();
-      if (!dups.empty) {
-        dups.forEach(async (doc) => {
-          await doc.ref.update({
-            summary: article.summary,
-            mainImage: article.mainImage,
-            type: article.type,
-            createdOn: article.createdOn,
-          });
-        });
-      } else {
-        let docRef = db.collection("CardsWithLogin").doc(`${num}`);
-        batch.set(docRef, {
-          ...article,
-          id: num.toString(),
-          sid: num,
-        });
-        num++;
-      }
+    articles.forEach((article) => {
+      let docRef = db.collection("CardsWithLogin").doc(`${num}`);
+      batch.set(docRef, {
+        ...article,
+        id: num.toString(),
+        sid: num,
+      });
+      num++;
     });
     await batch.commit();
     res.status(200).send({ message: "Changes Saved!" });

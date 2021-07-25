@@ -241,10 +241,99 @@ exports.getFeedbacks = (req, res) => {
     });
 };
 
+exports.likeCard = async (req, res) => {
+  try {
+    const cardid = req.params.cardid;
+    const email = req.params.email;
+    let cardDoc = await db.doc(`CardsWithLogin/${cardid}`).get();
+    if (!cardDoc.exists) {
+      return res.status(400).send({ message: "card doesn't exist." });
+    }
+    let docRef = await db
+      .collection("CardsWithLoginAnalytics")
+      .doc(cardid)
+      .get();
+    if (!docRef.exists) {
+      await db
+        .collection("CardsWithLoginAnalytics")
+        .doc(cardid)
+        .set({
+          likes: [email],
+          totalLikes: 1,
+        });
+    } else {
+      const { likes, totallikes } = docRef.data();
+      await docRef.ref.set(
+        { likes: [...likes, email], totallikes: totallikes + 1 },
+        { merge: true }
+      );
+    }
+
+    let userRef = await db.doc(`Users/${email}`).get();
+    const { liked } = userRef.data();
+    if (liked) {
+      await userRef.ref.set(
+        {
+          liked: [...liked, { cardid: cardid, time: new Date().toISOString() }],
+        },
+        { merge: true }
+      );
+    } else {
+      await userRef.ref.set(
+        {
+          liked: [{ cardid: cardid, time: new Date().toISOString() }],
+        },
+        { merge: true }
+      );
+    }
+    res.status(201).send({ message: "Liked card added." });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+};
+
+exports.dislikeCard = async (req, res) => {
+  try {
+    const cardid = req.params.cardid;
+    const email = req.params.email;
+    let cardDoc = await db.doc(`CardsWithLogin/${cardid}`).get();
+    if (!cardDoc.exists) {
+      return res.status(400).send({ message: "card doesn't exist." });
+    }
+    let userRef = await db.doc(`Users/${email}`).get();
+    const { disliked } = userRef.data();
+    if (disliked) {
+      await userRef.ref.set(
+        {
+          disliked: [
+            ...disliked,
+            { cardid: cardid, time: new Date().toISOString() },
+          ],
+        },
+        { merge: true }
+      );
+    } else {
+      await userRef.ref.set(
+        {
+          disliked: [{ cardid: cardid, time: new Date().toISOString() }],
+        },
+        { merge: true }
+      );
+    }
+    res.status(201).send({ message: "Disliked card added." });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+};
+
 exports.likeQuote = async (req, res) => {
   try {
     const quoteid = req.params.quoteid;
     const email = req.params.email;
+    let quoteDoc = await db.doc(`quotes/${quoteid}`).get();
+    if (!quoteDoc.exists) {
+      return res.status(400).send({ message: "quote doesn't exist." });
+    }
     let docRef = await db.collection("QuotesAnalytics").doc(quoteid).get();
     if (!docRef.exists) {
       await db
@@ -269,7 +358,10 @@ exports.likeQuote = async (req, res) => {
     if (likedQuotes && !likedQuotes.includes(quoteid)) {
       await docRef.ref.set(
         {
-          likedQuotes: [...likedQuotes, quoteid],
+          likedQuotes: [
+            ...likedQuotes,
+            { quoteid: quoteid, time: new Date().toISOString() },
+          ],
           totalLikedQuotes: totalLikedQuotes + 1,
         },
         { merge: true }
@@ -277,7 +369,7 @@ exports.likeQuote = async (req, res) => {
     } else {
       await docRef.ref.set(
         {
-          likedQuotes: [quoteid],
+          likedQuotes: [{ quoteid: quoteid, time: new Date().toISOString() }],
           totalLikedQuotes: 1,
         },
         { merge: true }
@@ -293,12 +385,19 @@ exports.dislikeQuote = async (req, res) => {
   try {
     const quoteid = req.params.quoteid;
     const email = req.params.email;
+    let quoteDoc = await db.doc(`quotes/${quoteid}`).get();
+    if (!quoteDoc.exists) {
+      return res.status(400).send({ message: "quote doesn't exist." });
+    }
     const docRef = await db.collection("Users").doc(email).get();
     const { dislikedQuotes, totalDislikedQuotes } = docRef.data();
     if (dislikedQuotes) {
       await docRef.ref.set(
         {
-          dislikedQuotes: [...dislikedQuotes, quoteid],
+          dislikedQuotes: [
+            ...dislikedQuotes,
+            { quoteid: quoteid, time: new Date().toISOString() },
+          ],
           totalDislikedQuotes: totalDislikedQuotes + 1,
         },
         { merge: true }
@@ -306,7 +405,9 @@ exports.dislikeQuote = async (req, res) => {
     } else {
       await docRef.ref.set(
         {
-          dislikedQuotes: [quoteid],
+          dislikedQuotes: [
+            { quoteid: quoteid, time: new Date().toISOString() },
+          ],
           totalDislikedQuotes: 1,
         },
         { merge: true }

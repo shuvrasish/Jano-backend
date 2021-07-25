@@ -2,6 +2,9 @@ const functions = require("firebase-functions");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const wiki = require("wikipedia");
+const { db, admin } = require("./config/firebase-config");
+const axios = require("axios").default;
 const app = express();
 const {
   getCardsWithoutLogin,
@@ -13,6 +16,7 @@ const {
   getCards,
   setQuotes,
   getQuotes,
+  getLiked,
 } = require("./handlers/cards");
 const {
   commentOnCard,
@@ -66,6 +70,7 @@ app.get("/getLikedCards/:email", getLikedCards);
 app.get("/getCardsWithHashtag/:category", getCardsWithHashtag);
 app.get("/getPreferredCards/:email", getPreferredCards); //NOT REQUIRED ANYMORE
 app.get("/getCards/:email", getCards); //returns preferred cards and normal cards in proper order (use this to get the cards for main window)
+app.get("/getLiked/:email", getLiked);
 
 //quotes
 app.post("/dislikeQuote/:quoteid/:email", dislikeQuote);
@@ -112,7 +117,7 @@ app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
 app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 
 //test
-app.get("/test", test); //DO NOT USE
+app.get("/test/:email", test); //DO NOT USE
 app.put("/setDb", setDb);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
@@ -131,4 +136,137 @@ exports.setQuotesSchedule = functions
   .onRun(async (context) => {
     await setQuotes();
     return console.log("Successfully set quotes!");
+  });
+
+const getArticle = async (topic) => {
+  try {
+    const page = await wiki.page(topic);
+    if (page) {
+      const webpage_url = page.fulllurl || page.canonicalurl;
+      const pageid = page.pageid;
+      const title = page.title;
+      const ns = page.ns;
+
+      const summary = await page.summary();
+      if (summary.type === "no-extract") {
+        return null;
+      }
+      let mainImage = summary.originalimage
+        ? summary.originalimage.source
+        : null;
+      const coordinates = await page.coordinates();
+      let categories = await page.categories();
+      categories = categories.map((category) => category.split(":")[1]);
+      const summ = summary.extract;
+      const subheading = summary.description
+        ? summary.description
+        : categories[0];
+      let images = await page.images();
+      images = images.slice(0, 3);
+      images = images.map((imageData) => imageData.url);
+      if (!mainImage) mainImage = images[0];
+      return {
+        heading: title,
+        summary: summ,
+        pageid: pageid,
+        subheading: subheading,
+        main_category: categories[0],
+        categories,
+        mainImage,
+        ns: ns,
+        webpage_url: webpage_url,
+        reference: "From Wikipedia, the free encyclopedia",
+        image_links: images,
+        coordinates: coordinates,
+        createdOn: new Date().toISOString(),
+        type: "normal",
+      };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
+
+exports.setNewCards = functions
+  .runWith({ timeoutSeconds: 540, memory: "1GB" })
+  .pubsub.schedule("0 1 * * *")
+  .onRun(async (context) => {
+    try {
+      const resp = await axios.get(
+        "https://asia-south1-swipeekaro.cloudfunctions.net/api/getAllCategories"
+      );
+      let categoriesCol = resp.data;
+      let topics = [];
+      for (let doc of categoriesCol) {
+        for (let categoryData of doc.main_category) {
+          let response;
+          if (categoryData.cmcontinue !== "") {
+            try {
+              response = await axios.get(
+                `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${categoryData.category}&cmsort=timestamp&cmcontinue=${categoryData.cmcontinue}&cmtype=page&cmdir=desc&format=json&cmlimi=1`
+              );
+            } catch (err) {
+              console.log(err);
+            }
+          } else {
+            try {
+              response = await axios.get(
+                `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${categoryData.category}&cmsort=timestamp&cmtype=page&cmdir=desc&format=json&cmlimit=1`
+              );
+            } catch (err) {
+              console.log(err);
+            }
+          }
+          if (response.data.continue.cmcontinue) {
+            let pages = [...response.data.query.categorymembers];
+            pages = pages.map((pagedata) => ({
+              ...pagedata,
+              main_category: categoryData.category,
+            }));
+            topics = [...topics, ...pages];
+            categoryData.cmcontinue = response.data.continue.cmcontinue;
+          }
+        }
+      }
+
+      let articles = [];
+      for (let topicData of topics) {
+        let article = await getArticle(topicData.pageid);
+        if (article) {
+          articles.push({ ...article, main_category: topicData.main_category });
+        }
+      }
+
+      let newcardsRef = await db.collection("CardsWithLogin").get();
+      let num = newcardsRef.size + 1;
+      let batch = db.batch();
+      articles.forEach((article) => {
+        let docRef = db.collection("CardsWithLogin").doc(`${num}`);
+        batch.set(docRef, {
+          ...article,
+          id: num.toString(),
+          sid: num,
+        });
+        num++;
+      });
+      let promises = [];
+      let index = 0;
+      let catRef = await db.collection("category_mapping").get();
+      catRef.forEach((doc) => {
+        promises.push(
+          doc.ref.set(
+            { main_category: categoriesCol[index++].main_category },
+            { merge: true }
+          )
+        );
+      });
+      await Promise.all(promises);
+      await batch.commit();
+      console.log("Docs updated!");
+    } catch (err) {
+      console.log(err);
+    }
   });

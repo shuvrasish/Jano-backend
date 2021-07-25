@@ -1,6 +1,9 @@
 const { db } = require("../config/firebase-config");
 const axios = require("axios").default;
 const wiki = require("wikipedia");
+const Filter = require("bad-words"),
+  filter = new Filter();
+filter.addWords("sex", "sexual");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -54,6 +57,31 @@ exports.getAllCategoryDataFromCards = (req, res) => {
       return res.status(200).send(category_deets);
     })
     .catch((err) => console.error(err));
+};
+
+exports.getLiked = async (req, res) => {
+  try {
+    const email = req.params.email;
+    const userRef = await db.collection("Users").doc(email).get();
+    const { liked, likedQuotes } = userRef.data();
+    let cards = [];
+    for (let likedData of liked) {
+      let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
+      if (card.exists) {
+        cards.push({ ...card.data(), likedTime: likedData.time });
+      }
+    }
+    for (let likedData of likedQuotes) {
+      let quote = await db.doc(`quotes/${likedData.quoteid}`).get();
+      if (quote.exists) {
+        cards.push({ ...quote.data(), likedTime: likedData.time });
+      }
+    }
+    cards.sort((a, b) => a.likedTime > b.likedTime);
+    res.status(200).send(cards);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 };
 
 exports.getLikedCards = (req, res) => {
@@ -260,10 +288,11 @@ exports.getCards = async (req, res) => {
     quizCardsRef.forEach((doc) => {
       const quizid = doc.id;
       const { cardid } = doc.data();
-      if (!seenQuiz.includes(quizid) && likedCards.includes(cardid)) {
-        quizCards.push({ ...doc.data() });
+      if (!seenQuiz.includes(quizid) && liked.includes(String(cardid))) {
+        quizCards.push({ ...doc.data });
       }
     });
+
     let cards = [];
     const n = normalCards.length;
     const p = prefCards.length;
@@ -288,9 +317,10 @@ exports.getCards = async (req, res) => {
       cards.push(normalCards[i]);
     }
 
+    cards = cards.filter((item) => Object.keys(item).length !== 0);
     res.status(200).send({ cardsLength: cards.length, cards });
   } catch (err) {
-    res.status(500).send({ error: err.code });
+    res.status(500).send(err);
   }
 };
 

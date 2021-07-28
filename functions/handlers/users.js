@@ -263,10 +263,12 @@ exports.likeCard = async (req, res) => {
         });
     } else {
       const { likes, totallikes } = docRef.data();
-      await docRef.ref.set(
-        { likes: [...likes, email], totallikes: totallikes + 1 },
-        { merge: true }
-      );
+      if (likes && !likes.includes(email)) {
+        await docRef.ref.set(
+          { likes: [...likes, email], totallikes: totallikes + 1 },
+          { merge: true }
+        );
+      }
     }
 
     let userRef = await db.doc(`Users/${email}`).get();

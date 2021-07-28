@@ -1,4 +1,4 @@
-const { db } = require("../config/firebase-config");
+const { db, admin } = require("../config/firebase-config");
 const axios = require("axios").default;
 const wiki = require("wikipedia");
 const Filter = require("bad-words"),
@@ -21,117 +21,49 @@ exports.getCardsWithoutLogin = (req, res) => {
     .catch((err) => res.status(500).json({ error: err.code }));
 };
 
-exports.getCardsWithLogin = (req, res) => {
-  //TODO: get limited cards
-  db.collection("CardsWithLogin")
-    .orderBy("id", "asc")
-    .get()
-    .then((docs) => sendCards(docs, res))
-    .catch((err) => res.status(500).json({ error: err.code }));
-};
-
-exports.getAllCategoryDataFromCards = (req, res) => {
-  db.collection("CardsWithLogin")
-    .get()
-    .then((docs) => {
-      let category_deets = [];
-      docs.forEach((doc) => {
-        const { main_category, categories } = doc.data();
-        if (!category_deets.find((o) => o.main === main_category)) {
-          category_deets.push({
-            main: main_category,
-            cat: [...categories],
-          });
-        } else {
-          let idx = category_deets.findIndex((o) => o.main === main_category);
-          category_deets[idx] = {
-            main: main_category,
-            cat: [...category_deets[idx].cat, ...categories].filter(
-              (item, pos, self) => {
-                return self.indexOf(item) === pos;
-              }
-            ),
-          };
-        }
-      });
-      return res.status(200).send(category_deets);
-    })
-    .catch((err) => console.error(err));
-};
-
 exports.getLiked = async (req, res) => {
   try {
     const email = req.params.email;
     const userRef = await db.collection("Users").doc(email).get();
     const { liked, likedQuotes } = userRef.data();
+
+    let likedArray = [];
+    if (liked) {
+      likedArray = [...liked];
+    }
     let cards = [];
-    for (let likedData of liked) {
-      let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
-      if (card.exists) {
-        cards.push({ ...card.data(), likedTime: likedData.time });
+    if (liked) {
+      likedArray.sort((a, b) => a.time > b.time).slice(20);
+      for (let likedData of likedArray) {
+        let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
+        if (card.exists) {
+          cards.push({ ...card.data(), likedTime: likedData.time });
+        }
       }
     }
-    for (let likedData of likedQuotes) {
-      let quote = await db.doc(`quotes/${likedData.quoteid}`).get();
-      if (quote.exists) {
-        cards.push({ ...quote.data(), likedTime: likedData.time });
+
+    let likedQuotesArray = [];
+    if (likedQuotes) {
+      likedQuotesArray = [...likedQuotes];
+    }
+    if (likedQuotes) {
+      likedQuotesArray.sort((a, b) => a.time > b.time).slice(20);
+      for (let likedData of likedQuotesArray) {
+        let quote = await db.doc(`quotes/${likedData.quoteid}`).get();
+        if (quote.exists) {
+          cards.push({ ...quote.data(), likedTime: likedData.time });
+        }
       }
     }
+
+    cards = cards.filter(Boolean);
+    cards = cards.filter((card) => Object.entries(card).length !== 0);
+
     cards.sort((a, b) => a.likedTime > b.likedTime);
     res.status(200).send(cards);
   } catch (err) {
     res.status(500).send(err);
   }
-};
-
-exports.getLikedCards = (req, res) => {
-  const email = req.params.email;
-  let likedNumbers = [];
-  let likedQuotesNumbers = [];
-  db.doc(`Users/${email}`)
-    .get()
-    .then((user) => {
-      const { liked, likedQuotes } = user.data();
-      if (liked) {
-        likedNumbers = [...liked];
-      }
-      if (likedQuotes) {
-        likedQuotesNumbers = [...likedQuotes];
-      }
-    })
-    .then(() => {
-      let likedCards = [];
-      let likedQuotesCards = [];
-      let cards = [];
-      let p = [];
-      likedNumbers.forEach((id) => {
-        p.push(
-          db
-            .doc(`CardsWithLogin/${id}`)
-            .get()
-            .then((card) => {
-              likedCards.push({ ...card.data() });
-            })
-        );
-      });
-      likedQuotesNumbers.forEach((id) => {
-        p.push(
-          db
-            .doc(`quotes/${id}`)
-            .get()
-            .then((card) => {
-              likedQuotesCards.push({ ...card.data() });
-            })
-        );
-      });
-      Promise.all(p).then(() => {
-        cards = [...likedCards, ...likedQuotesCards];
-        cards = cards.filter(Boolean);
-        cards = cards.filter((card) => Object.entries(card).length !== 0);
-        return res.status(200).send(cards);
-      });
-    })
-    .catch((err) => res.status(500).send(err));
 };
 
 exports.getCardsWithHashtag = (req, res) => {
@@ -217,13 +149,13 @@ exports.getCards = async (req, res) => {
     }
     let cardsRef = await db
       .collection("CardsWithLogin")
-      .limit(40 + seen.size)
+      .limit(25 + seen.size)
       .get();
     let vis = new Set();
     let prefCards = [];
     let normalCards = [];
     cardsRef.forEach((card) => {
-      const { categories, main_category, id } = card.data();
+      const { categories, main_category, id, mainImage } = card.data();
       let isSafe = true;
       if (main_category !== filter.clean(main_category)) {
         isSafe = false;
@@ -236,13 +168,23 @@ exports.getCards = async (req, res) => {
               (userCats.has(category) || userCats.has(main_category)) &&
               !vis.has(id)
             ) {
-              prefCards.push({ ...card.data() });
+              prefCards.push({
+                ...card.data(),
+                mainImage: mainImage
+                  ? mainImage
+                  : "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e",
+              });
               vis.add(id);
             } else if (
               (!userCats.has(category) || !userCats.has(main_category)) &&
               !vis.has(id)
             ) {
-              normalCards.push({ ...card.data() });
+              normalCards.push({
+                ...card.data(),
+                mainImage: mainImage
+                  ? mainImage
+                  : "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e",
+              });
               vis.add(id);
             }
           }
@@ -263,7 +205,7 @@ exports.getCards = async (req, res) => {
     }
     let quoteCardsRef = await db
       .collection("quotes")
-      .limit(20 + seenQuotes.size)
+      .limit(10 + seenQuotes.size)
       .get();
     quoteCardsRef.forEach((card) => {
       const { categories, author, body, type, id, mainImage } = card.data();
@@ -288,7 +230,7 @@ exports.getCards = async (req, res) => {
     }
     const quizCardsRef = await db
       .collection("quiz")
-      .limit(seenQuiz.size + 15)
+      .limit(seenQuiz.size + 10)
       .get();
 
     let likedSet = new Set();

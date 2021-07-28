@@ -66,9 +66,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 //cards
 app.get("/getCardsWithoutLogin", getCardsWithoutLogin);
-app.get("/getCardsWithLogin", getCardsWithLogin); //NOT REQUIRED ANYMORE
-app.get("/getAllCategoryDataFromCards", getAllCategoryDataFromCards); //returns an array with category and subcategory data. NOT TO BE USED ANYMORE
-app.get("/getLikedCards/:email", getLikedCards);
 app.get("/getCardsWithHashtag/:category", getCardsWithHashtag);
 app.get("/getPreferredCards/:email", getPreferredCards); //NOT REQUIRED ANYMORE
 app.get("/getCards/:email", getCards); //returns preferred cards and normal cards in proper order (use this to get the cards for main window)
@@ -121,7 +118,7 @@ app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
 app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 
 //test
-app.get("/test", test); //DO NOT USE
+app.get("/test/:email", test); //DO NOT USE
 app.put("/setDb", setDb);
 app.put("/setDbx", setDbx);
 

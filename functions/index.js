@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const wiki = require("wikipedia");
-const { db, admin } = require("./config/firebase-config");
+const { db } = require("./config/firebase-config");
 const axios = require("axios").default;
 const app = express();
 const {
@@ -52,7 +52,7 @@ const {
   setTrendingCards,
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
-const { test, setDb } = require("./test");
+const { test, setDb, setDbx } = require("./test");
 const {
   postQuiz,
   attemptQuiz,
@@ -121,8 +121,9 @@ app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
 app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 
 //test
-app.get("/test/:email", test); //DO NOT USE
+app.get("/test", test); //DO NOT USE
 app.put("/setDb", setDb);
+app.put("/setDbx", setDbx);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

@@ -1,28 +1,8 @@
-const { db, admin } = require("./config/firebase-config");
-const axios = require("axios").default;
-const trends = require("google-trends-api");
-const wiki = require("wikipedia");
+const { db } = require("./config/firebase-config");
 
 exports.test = async (req, res) => {
   try {
-    const email = req.params.email;
-    const userRef = await db.collection("Users").doc(email).get();
-    const { liked, likedQuotes } = userRef.data();
-    let cards = [];
-    for (let likedData of liked) {
-      let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
-      if (card.exists) {
-        cards.push({ ...card.data(), likedTime: likedData.time });
-      }
-    }
-    for (let likedData of likedQuotes) {
-      let quote = await db.doc(`CardsWithLogin/${likedData.quoteid}`).get();
-      if (quote.exists) {
-        cards.push({ ...quote.data(), likedTime: likedData.time });
-      }
-    }
-    cards.sort((a, b) => a.likedTime > b.likedTime);
-    res.status(200).send(cards);
+    res.status(200).send("test");
   } catch (err) {
     res.status(500).send(err);
   }
@@ -41,25 +21,25 @@ exports.setDb = (req, res) => {
         let newDislikedQuotes = [];
         if (liked) {
           newLiked = liked.map((el) => ({
-            cardid: el.cardid.cardid,
+            cardid: el,
             time: new Date().toISOString(),
           }));
         }
         if (disliked) {
           newDisliked = disliked.map((el) => ({
-            cardid: el.cardid.cardid,
+            cardid: el,
             time: new Date().toISOString(),
           }));
         }
         if (likedQuotes) {
           newLikedQuotes = likedQuotes.map((el) => ({
-            quoteid: el.quoteid.cardid,
+            quoteid: el,
             time: new Date().toISOString(),
           }));
         }
         if (dislikedQuotes) {
           newDislikedQuotes = dislikedQuotes.map((el) => ({
-            quoteid: el.quoteid.cardid,
+            quoteid: el,
             time: new Date().toISOString(),
           }));
         }
@@ -70,6 +50,35 @@ exports.setDb = (req, res) => {
               disliked: newDisliked,
               likedQuotes: newLikedQuotes,
               dislikedQuotes: newDislikedQuotes,
+            },
+            { merge: true }
+          )
+        );
+      });
+      Promise.all(promises);
+    })
+    .then(() => res.status(200).send("Docs updated"))
+    .catch((err) => res.status(500).send({ error: error.code }));
+};
+
+exports.setDbx = (req, res) => {
+  db.collection("category_mapping")
+    .get()
+    .then((docs) => {
+      let promises = [];
+      docs.forEach((doc) => {
+        const { main_category } = doc.data();
+        let newArr = [];
+        if (main_category) {
+          newArr = main_category.map((el) => ({
+            category: el,
+            cmcontinue: "",
+          }));
+        }
+        promises.push(
+          doc.ref.set(
+            {
+              main_category: newArr,
             },
             { merge: true }
           )

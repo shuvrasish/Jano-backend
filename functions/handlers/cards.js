@@ -199,69 +199,75 @@ exports.getCards = async (req, res) => {
       dislikedQuotes,
       attemptedQuiz,
     } = userRef.data();
-    let seen = [];
+    let seen = new Set();
     if (liked) {
-      seen = [...liked];
+      liked.forEach((likedData) => {
+        seen.add(likedData.cardid);
+      });
     }
     if (disliked) {
-      seen = [...seen, ...disliked];
+      disliked.forEach((dislikedData) => {
+        seen.add(dislikedData.cardid);
+      });
     }
-    let userCats = [];
+
+    let userCats = new Set();
     if (categories) {
-      userCats = [...categories];
+      userCats = new Set([...categories]);
     }
-    let cardsRef;
-    if (seen.length > 0 && seen.length < 10) {
-      cardsRef = await db
-        .collection("CardsWithLogin")
-        .where("sid", "not-in", seen)
-        .limit(40)
-        .get();
-    } else {
-      cardsRef = await db
-        .collection("CardsWithLogin")
-        .limit(40 + seen.length)
-        .get();
-    }
-    let vis = [];
+    let cardsRef = await db
+      .collection("CardsWithLogin")
+      .limit(40 + seen.size)
+      .get();
+    let vis = new Set();
     let prefCards = [];
     let normalCards = [];
     cardsRef.forEach((card) => {
       const { categories, main_category, id } = card.data();
-      if (!seen.includes(id)) {
+      let isSafe = true;
+      if (main_category !== filter.clean(main_category)) {
+        isSafe = false;
+      }
+
+      if (!seen.has(id) && isSafe) {
         for (let category of categories) {
-          if (
-            (userCats.includes(category) || userCats.includes(main_category)) &&
-            !vis.includes(id)
-          ) {
-            prefCards.push({ ...card.data() });
-            vis.push(id);
-          } else if (
-            (!userCats.includes(category) ||
-              !userCats.includes(main_category)) &&
-            !vis.includes(id)
-          ) {
-            normalCards.push({ ...card.data() });
-            vis.push(id);
+          if (category === filter.clean(category)) {
+            if (
+              (userCats.has(category) || userCats.has(main_category)) &&
+              !vis.has(id)
+            ) {
+              prefCards.push({ ...card.data() });
+              vis.add(id);
+            } else if (
+              (!userCats.has(category) || !userCats.has(main_category)) &&
+              !vis.has(id)
+            ) {
+              normalCards.push({ ...card.data() });
+              vis.add(id);
+            }
           }
         }
       }
     });
     let quoteCards = [];
-    let seenQuotes = [];
+    let seenQuotes = new Set();
     if (likedQuotes) {
-      seenQuotes = [...likedQuotes];
+      likedQuotes.forEach((likedData) => {
+        seenQuotes.add(likedData.quoteid);
+      });
     }
     if (dislikedQuotes) {
-      seenQuotes = [...seenQuotes, dislikedQuotes];
+      dislikedQuotes.forEach((dislikedData) => {
+        seenQuotes.add(dislikedData.quoteid);
+      });
     }
-    const quoteCardsRef = await db
+    let quoteCardsRef = await db
       .collection("quotes")
-      .limit(20 + seenQuotes.length)
+      .limit(20 + seenQuotes.size)
       .get();
     quoteCardsRef.forEach((card) => {
       const { categories, author, body, type, id, mainImage } = card.data();
-      if (!seenQuotes.includes(id)) {
+      if (!seenQuotes.has(id)) {
         quoteCards.push({
           heading: author,
           summary: body,
@@ -274,21 +280,27 @@ exports.getCards = async (req, res) => {
     });
 
     let quizCards = [];
-    let seenQuiz = [];
+    let seenQuiz = new Set();
     if (attemptedQuiz) {
       attemptedQuiz.forEach((quiz) => {
-        seenQuiz.push(quiz.quizid);
+        seenQuiz.add(quiz.quizid);
       });
     }
     const quizCardsRef = await db
       .collection("quiz")
-      .limit(seenQuiz.length + 15)
+      .limit(seenQuiz.size + 15)
       .get();
 
+    let likedSet = new Set();
+    if (liked) {
+      liked.forEach((likedData) => {
+        likedSet.add(likedData.cardid);
+      });
+    }
     quizCardsRef.forEach((doc) => {
       const quizid = doc.id;
       const { cardid } = doc.data();
-      if (!seenQuiz.includes(quizid) && liked.includes(String(cardid))) {
+      if (!seenQuiz.has(quizid) && likedSet.has(String(cardid))) {
         quizCards.push({ ...doc.data });
       }
     });

@@ -168,7 +168,7 @@ exports.getCards = async (req, res) => {
         (image_links.length === 0 || image_links[0].trim() === "")
       ) {
         newImageLinks.push(
-          "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e"
+          "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%203.gif?alt=media&token=8352d5c6-5949-4188-9cb8-b041799a45a2"
         );
         imgProb = true;
       }

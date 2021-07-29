@@ -33,7 +33,11 @@ exports.getLiked = async (req, res) => {
     }
     let cards = [];
     if (liked) {
-      likedArray.sort((a, b) => a.time > b.time).slice(20);
+      likedArray = likedArray
+        .sort((a, b) => {
+          return new Date(b.time) - new Date(a.time);
+        })
+        .slice(0, 10);
       for (let likedData of likedArray) {
         let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
         if (card.exists) {
@@ -47,7 +51,11 @@ exports.getLiked = async (req, res) => {
       likedQuotesArray = [...likedQuotes];
     }
     if (likedQuotes) {
-      likedQuotesArray.sort((a, b) => a.time > b.time).slice(20);
+      likedQuotesArray = likedQuotesArray
+        .sort((a, b) => {
+          return new Date(b.time) - new Date(a.time);
+        })
+        .slice(0, 10);
       for (let likedData of likedQuotesArray) {
         let quote = await db.doc(`quotes/${likedData.quoteid}`).get();
         if (quote.exists) {
@@ -59,7 +67,9 @@ exports.getLiked = async (req, res) => {
     cards = cards.filter(Boolean);
     cards = cards.filter((card) => Object.entries(card).length !== 0);
 
-    cards.sort((a, b) => a.likedTime <= b.likedTime);
+    cards = cards.sort((a, b) => {
+      return new Date(b.likedTime) - new Date(a.likedTime);
+    });
     res.status(200).send(cards);
   } catch (err) {
     res.status(500).send(err);
@@ -149,7 +159,7 @@ exports.getCards = async (req, res) => {
     }
     let cardsRef = await db
       .collection("CardsWithLogin")
-      .limit(15 + seen.size)
+      .limit(3 + seen.size)
       .get();
     let vis = new Set();
     let prefCards = [];
@@ -213,7 +223,7 @@ exports.getCards = async (req, res) => {
     }
     let quoteCardsRef = await db
       .collection("quotes")
-      .limit(5 + seenQuotes.size)
+      .limit(1 + seenQuotes.size)
       .get();
     quoteCardsRef.forEach((card) => {
       const { categories, author, body, type, id, mainImage } = card.data();
@@ -238,7 +248,7 @@ exports.getCards = async (req, res) => {
     }
     const quizCardsRef = await db
       .collection("quiz")
-      .limit(seenQuiz.size + 5)
+      .limit(seenQuiz.size + 1)
       .get();
 
     let likedSet = new Set();

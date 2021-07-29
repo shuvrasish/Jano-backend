@@ -109,7 +109,7 @@ app.get("/getAllCategories", getAllCategoryData);
 //trends
 app.get("/getTrends", getTrends); //DO NOT USE
 app.get("/getTrendingCards", getTrendingCards); //Use this to get All trending Cards
-app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
+// app.post("/setTrendingCards", setTrendingCards); //DO NOT USE (just for testing)
 
 //quiz
 app.post("/postQuiz/:email", postQuiz);

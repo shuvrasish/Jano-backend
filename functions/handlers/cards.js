@@ -59,7 +59,7 @@ exports.getLiked = async (req, res) => {
     cards = cards.filter(Boolean);
     cards = cards.filter((card) => Object.entries(card).length !== 0);
 
-    cards.sort((a, b) => a.likedTime > b.likedTime);
+    cards.sort((a, b) => a.likedTime <= b.likedTime);
     res.status(200).send(cards);
   } catch (err) {
     res.status(500).send(err);
@@ -149,16 +149,28 @@ exports.getCards = async (req, res) => {
     }
     let cardsRef = await db
       .collection("CardsWithLogin")
-      .limit(25 + seen.size)
+      .limit(15 + seen.size)
       .get();
     let vis = new Set();
     let prefCards = [];
     let normalCards = [];
     cardsRef.forEach((card) => {
-      const { categories, main_category, id, mainImage } = card.data();
+      const { categories, main_category, id, image_links, mainImage } =
+        card.data();
       let isSafe = true;
       if (main_category !== filter.clean(main_category)) {
         isSafe = false;
+      }
+      let newImageLinks = [];
+      let imgProb = false;
+      if (
+        !mainImage &&
+        (image_links.length === 0 || image_links[0].trim() === "")
+      ) {
+        newImageLinks.push(
+          "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e"
+        );
+        imgProb = true;
       }
 
       if (!seen.has(id) && isSafe) {
@@ -170,9 +182,7 @@ exports.getCards = async (req, res) => {
             ) {
               prefCards.push({
                 ...card.data(),
-                mainImage: mainImage
-                  ? mainImage
-                  : "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e",
+                image_links: imgProb ? newImageLinks : image_links,
               });
               vis.add(id);
             } else if (
@@ -181,9 +191,7 @@ exports.getCards = async (req, res) => {
             ) {
               normalCards.push({
                 ...card.data(),
-                mainImage: mainImage
-                  ? mainImage
-                  : "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%202.gif?alt=media&token=426542b9-4646-4d74-842d-88c61e56e15e",
+                image_links: imgProb ? newImageLinks : image_links,
               });
               vis.add(id);
             }
@@ -205,7 +213,7 @@ exports.getCards = async (req, res) => {
     }
     let quoteCardsRef = await db
       .collection("quotes")
-      .limit(10 + seenQuotes.size)
+      .limit(5 + seenQuotes.size)
       .get();
     quoteCardsRef.forEach((card) => {
       const { categories, author, body, type, id, mainImage } = card.data();
@@ -230,7 +238,7 @@ exports.getCards = async (req, res) => {
     }
     const quizCardsRef = await db
       .collection("quiz")
-      .limit(seenQuiz.size + 10)
+      .limit(seenQuiz.size + 5)
       .get();
 
     let likedSet = new Set();

@@ -8,9 +8,6 @@ const axios = require("axios").default;
 const app = express();
 const {
   getCardsWithoutLogin,
-  getCardsWithLogin,
-  getAllCategoryDataFromCards,
-  getLikedCards,
   getCardsWithHashtag,
   getPreferredCards,
   getCards,
@@ -52,13 +49,14 @@ const {
   setTrendingCards,
 } = require("./handlers/trends");
 const { getAllCategoryData } = require("./handlers/categories");
-const { test, setDb, setDbx } = require("./test");
+const { test } = require("./test");
 const {
   postQuiz,
   attemptQuiz,
   getAttemptedQuizes,
   reAttemptQuiz,
 } = require("./handlers/quiz");
+const { setutil } = require("./handlers/util");
 
 app.use(cors({ origin: true })); //write frontend app url instead of  "true" (for safety)
 app.use(bodyParser.json());
@@ -119,25 +117,32 @@ app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 
 //test
 app.get("/test/:email", test); //DO NOT USE
-app.put("/setDb", setDb);
-app.put("/setDbx", setDbx);
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 
 exports.setTrendingCardsSchedule = functions
   .region("asia-south1")
   .pubsub.schedule("0 0 * * *")
-  .onRun(async (context) => {
+  .onRun(async () => {
     await setTrendingCards();
-    return console.log("Successfully updated value");
+    return console.log("Successfully set trending cards.");
   });
 
 exports.setQuotesSchedule = functions
   .region("asia-south1")
   .pubsub.schedule("0 */6 * * *")
-  .onRun(async (context) => {
+  .onRun(async () => {
     await setQuotes();
     return console.log("Successfully set quotes!");
+  });
+
+exports.setUtilSchedule = functions
+  .region("asia-south1")
+  .runWith({ timeoutSeconds: 540, memory: "1GB" })
+  .pubsub.schedule("0 2 * * *")
+  .onRun(async () => {
+    setutil();
+    return console.log("Successfully set utils!");
   });
 
 const getArticle = async (topic) => {

@@ -69,6 +69,7 @@ exports.getTrendingCards = async (req, res) => {
   let cards = [];
   db.collection("CardsWithLogin")
     .orderBy("createdOn", "desc")
+    .limit(100)
     .get()
     .then((docs) => {
       docs.forEach((doc) => {
@@ -115,6 +116,10 @@ exports.setTrendingCards = async (req, res) => {
       num++;
     });
     await batch.commit();
+    await db
+      .collection("fcm")
+      .doc("fcmnotif")
+      .set({ time: new Date().toISOString(), numCards: articles.length });
     res.status(200).send({ message: "Changes Saved!" });
   } catch (err) {
     res.status(500).send(err);

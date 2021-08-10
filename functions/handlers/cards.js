@@ -37,7 +37,7 @@ exports.getLiked = async (req, res) => {
         .sort((a, b) => {
           return new Date(b.time) - new Date(a.time);
         })
-        .slice(0, 10);
+        .slice(0, 5);
       for (let likedData of likedArray) {
         let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
         if (card.exists) {
@@ -55,7 +55,7 @@ exports.getLiked = async (req, res) => {
         .sort((a, b) => {
           return new Date(b.time) - new Date(a.time);
         })
-        .slice(0, 10);
+        .slice(0, 5);
       for (let likedData of likedQuotesArray) {
         let quote = await db.doc(`quotes/${likedData.quoteid}`).get();
         if (quote.exists) {
@@ -82,13 +82,20 @@ exports.getCardsWithHashtag = (req, res) => {
   const category = req.params.category;
   let cards = [];
   db.collection("CardsWithLogin")
+    .orderBy("sid", "desc")
+    .limit(100)
     .get()
     .then((docs) => {
       docs.forEach((doc) => {
-        const { categories } = doc.data();
-        if (categories.includes(category)) {
+        const { categories, main_category } = doc.data();
+        if (main_category === category || categories.includes(category)) {
           cards.push({ ...doc.data() });
         }
+      });
+    })
+    .then(() => {
+      cards = cards.sort((a, b) => {
+        return new Date(b.createdOn) - new Date(a.createdOn);
       });
     })
     .then(() => res.status(200).send(cards))
@@ -337,6 +344,10 @@ exports.getCards = async (req, res) => {
     docs.forEach((card) => {
       const { main_category, image_links, mainImage } = card.data();
       let newImageLinks = [];
+      let isSafe = true;
+      if (main_category !== filter.clean(main_category)) {
+        isSafe = false;
+      }
       let imgProb = false;
       if (
         !mainImage &&
@@ -347,16 +358,18 @@ exports.getCards = async (req, res) => {
         );
         imgProb = true;
       }
-      if (userCats.has(main_category)) {
-        prefCards.push({
-          ...card.data(),
-          image_links: imgProb ? newImageLinks : image_links,
-        });
-      } else {
-        normalCards.push({
-          ...card.data(),
-          image_links: imgProb ? newImageLinks : image_links,
-        });
+      if (isSafe) {
+        if (userCats.has(main_category)) {
+          prefCards.push({
+            ...card.data(),
+            image_links: imgProb ? newImageLinks : image_links,
+          });
+        } else {
+          normalCards.push({
+            ...card.data(),
+            image_links: imgProb ? newImageLinks : image_links,
+          });
+        }
       }
     });
     let seenQuoteids = [];
@@ -453,6 +466,13 @@ exports.setQuotes = async (req, res) => {
       .collection("quotes")
       .doc(quote.id)
       .set({ ...quote }, { merge: true });
+    await db.collection("fcm").doc("fcmnotifquotes").set({
+      numQuotes: 1,
+      author: quote.author,
+      quoteBody: quote.body,
+      image: quote.mainImage,
+      time: new Date().toISOString(),
+    });
     res.status(200).send({ message: "Changes Saved!" });
   } catch (err) {
     res.status(500).send(err);

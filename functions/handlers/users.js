@@ -1,4 +1,5 @@
-const { db, admin } = require("../config/firebase-config");
+const { db } = require("../config/firebase-config");
+const admin = require("firebase-admin");
 
 exports.getAllUsers = (req, res) => {
   db.collection("Users")
@@ -245,49 +246,18 @@ exports.likeCard = async (req, res) => {
   try {
     const cardid = req.params.cardid;
     const email = req.params.email;
-    let cardDoc = await db.doc(`CardsWithLogin/${cardid}`).get();
-    if (!cardDoc.exists) {
-      return res.status(400).send({ message: "card doesn't exist." });
-    }
-    let docRef = await db
-      .collection("CardsWithLoginAnalytics")
-      .doc(cardid)
-      .get();
-    if (!docRef.exists) {
-      await db
-        .collection("CardsWithLoginAnalytics")
-        .doc(cardid)
-        .set({
-          likes: [email],
-          totalLikes: 1,
-        });
-    } else {
-      const { likes, totallikes } = docRef.data();
-      if (likes && !likes.includes(email)) {
-        await docRef.ref.set(
-          { likes: [...likes, email], totallikes: totallikes + 1 },
-          { merge: true }
-        );
-      }
-    }
+    // const analyticsDoc = db.collection("CardsWithLoginAnalytics").doc(cardid);
+    // await analyticsDoc.update({
+    //   likes: admin.firestore.FieldValue.arrayUnion(email),
+    //   totallikes: admin.firestore.FieldValue.increment(1),
+    // });
 
-    let userRef = await db.doc(`Users/${email}`).get();
-    const { liked } = userRef.data();
-    if (liked) {
-      await userRef.ref.set(
-        {
-          liked: [...liked, { cardid: cardid, time: new Date().toISOString() }],
-        },
-        { merge: true }
-      );
-    } else {
-      await userRef.ref.set(
-        {
-          liked: [{ cardid: cardid, time: new Date().toISOString() }],
-        },
-        { merge: true }
-      );
-    }
+    let newEntry = { cardid: cardid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      liked: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totalliked: admin.firestore.FieldValue.increment(1),
+    });
     res.status(201).send({ message: "Liked card added." });
   } catch (err) {
     res.status(500).send(err);
@@ -298,30 +268,12 @@ exports.dislikeCard = async (req, res) => {
   try {
     const cardid = req.params.cardid;
     const email = req.params.email;
-    let cardDoc = await db.doc(`CardsWithLogin/${cardid}`).get();
-    if (!cardDoc.exists) {
-      return res.status(400).send({ message: "card doesn't exist." });
-    }
-    let userRef = await db.doc(`Users/${email}`).get();
-    const { disliked } = userRef.data();
-    if (disliked) {
-      await userRef.ref.set(
-        {
-          disliked: [
-            ...disliked,
-            { cardid: cardid, time: new Date().toISOString() },
-          ],
-        },
-        { merge: true }
-      );
-    } else {
-      await userRef.ref.set(
-        {
-          disliked: [{ cardid: cardid, time: new Date().toISOString() }],
-        },
-        { merge: true }
-      );
-    }
+    let newEntry = { cardid: cardid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      disliked: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totaldisliked: admin.firestore.FieldValue.increment(1),
+    });
     res.status(201).send({ message: "Disliked card added." });
   } catch (err) {
     res.status(500).send(err);
@@ -332,51 +284,18 @@ exports.likeQuote = async (req, res) => {
   try {
     const quoteid = req.params.quoteid;
     const email = req.params.email;
-    let quoteDoc = await db.doc(`quotes/${quoteid}`).get();
-    if (!quoteDoc.exists) {
-      return res.status(400).send({ message: "quote doesn't exist." });
-    }
-    let docRef = await db.collection("QuotesAnalytics").doc(quoteid).get();
-    if (!docRef.exists) {
-      await db
-        .collection("QuotesAnalytics")
-        .doc(quoteid)
-        .set({
-          likes: [email],
-          totalLikes: 1,
-        });
-    } else {
-      const { likes, totalLikes } = docRef.data();
-      if (likes && !likes.includes(email)) {
-        await docRef.ref.set(
-          { likes: [...likes, email], totalLikes: totalLikes + 1 },
-          { merge: true }
-        );
-      }
-    }
+    // const analyticsDoc = db.collection("QuotesAnalytics").doc(quoteid);
+    // await analyticsDoc.update({
+    //   likes: admin.firestore.FieldValue.arrayUnion(email),
+    //   totalLikes: admin.firestore.FieldValue.increment(1),
+    // });
 
-    docRef = await db.collection("Users").doc(email).get();
-    const { likedQuotes, totalLikedQuotes } = docRef.data();
-    if (likedQuotes && !likedQuotes.includes(quoteid)) {
-      await docRef.ref.set(
-        {
-          likedQuotes: [
-            ...likedQuotes,
-            { quoteid: quoteid, time: new Date().toISOString() },
-          ],
-          totalLikedQuotes: totalLikedQuotes + 1,
-        },
-        { merge: true }
-      );
-    } else {
-      await docRef.ref.set(
-        {
-          likedQuotes: [{ quoteid: quoteid, time: new Date().toISOString() }],
-          totalLikedQuotes: 1,
-        },
-        { merge: true }
-      );
-    }
+    let newEntry = { quoteid: quoteid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      likedQuotes: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totalLikedQuotes: admin.firestore.FieldValue.increment(1),
+    });
     res.status(201).send({ message: "Liked quote added." });
   } catch (err) {
     res.status(500).send({ error: err.code });
@@ -387,34 +306,12 @@ exports.dislikeQuote = async (req, res) => {
   try {
     const quoteid = req.params.quoteid;
     const email = req.params.email;
-    let quoteDoc = await db.doc(`quotes/${quoteid}`).get();
-    if (!quoteDoc.exists) {
-      return res.status(400).send({ message: "quote doesn't exist." });
-    }
-    const docRef = await db.collection("Users").doc(email).get();
-    const { dislikedQuotes, totalDislikedQuotes } = docRef.data();
-    if (dislikedQuotes) {
-      await docRef.ref.set(
-        {
-          dislikedQuotes: [
-            ...dislikedQuotes,
-            { quoteid: quoteid, time: new Date().toISOString() },
-          ],
-          totalDislikedQuotes: totalDislikedQuotes + 1,
-        },
-        { merge: true }
-      );
-    } else {
-      await docRef.ref.set(
-        {
-          dislikedQuotes: [
-            { quoteid: quoteid, time: new Date().toISOString() },
-          ],
-          totalDislikedQuotes: 1,
-        },
-        { merge: true }
-      );
-    }
+    let newEntry = { quoteid: quoteid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      dislikedQuotes: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totalDislikedQuotes: admin.firestore.FieldValue.increment(1),
+    });
     res.status(201).send({ message: "Disliked quote added." });
   } catch (err) {
     res.status(500).send({ error: err.code });

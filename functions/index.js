@@ -4,6 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const wiki = require("wikipedia");
 const { db } = require("./config/firebase-config");
+const admin = require("firebase-admin");
 const axios = require("axios").default;
 const app = express();
 const {
@@ -120,8 +121,42 @@ app.get("/test/:email", test); //DO NOT USE
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 
+exports.sendNotifForCards = functions
+  .region("asia-south1")
+  .firestore.document("fcm/fcmnotif")
+  .onWrite(async (event) => {
+    const numCards = event.after.get("numCards");
+    let message = {
+      notification: {
+        title: `${numCards} new trending cards added!`, //TODO: add any one trending card image
+        body: "Check them out now!",
+      },
+      topic: "trendingcards",
+    };
+    await admin.messaging().send(message);
+  });
+
+exports.sendNotifForQuotes = functions
+  .region("asia-south1")
+  .firestore.document("fcm/fcmnotifquotes")
+  .onWrite(async (event) => {
+    const quoteBody = event.after.get("quoteBody");
+    const author = event.after.get("author");
+    const image = event.after.get("image");
+    let message = {
+      notification: {
+        title: "Quote of the day!", //TODO: add any one trending card image
+        body: quoteBody + " - " + author,
+        image: image,
+      },
+      topic: "quotes",
+    };
+    await admin.messaging().send(message);
+  });
+
 exports.setTrendingCardsSchedule = functions
   .region("asia-south1")
+  .runWith({ timeoutSeconds: 540, memory: "1GB" })
   .pubsub.schedule("0 0 * * *")
   .onRun(async () => {
     await setTrendingCards();
@@ -165,10 +200,16 @@ const getArticle = async (topic) => {
       let categories = await page.categories();
       categories = categories.map((category) => category.split(":")[1]);
       const summ = summary.extract;
+      if (!summ) {
+        return null;
+      }
       const subheading = summary.description
         ? summary.description
         : categories[0];
       let images = await page.images();
+      if (!images) {
+        return null;
+      }
       images = images.slice(0, 3);
       images = images.map((imageData) => imageData.url);
       if (!mainImage) mainImage = images[0];
@@ -198,6 +239,7 @@ const getArticle = async (topic) => {
 };
 
 exports.setNewCards = functions
+  .region("asia-south1")
   .runWith({ timeoutSeconds: 540, memory: "1GB" })
   .pubsub.schedule("0 1 * * *")
   .onRun(async (context) => {
@@ -213,7 +255,7 @@ exports.setNewCards = functions
           if (categoryData.cmcontinue !== "") {
             try {
               response = await axios.get(
-                `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${categoryData.category}&cmsort=timestamp&cmcontinue=${categoryData.cmcontinue}&cmtype=page&cmdir=desc&format=json&cmlimi=1`
+                `https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:${categoryData.category}&cmsort=timestamp&cmcontinue=${categoryData.cmcontinue}&cmtype=page&cmdir=desc&format=json&cmlimit=1`
               );
             } catch (err) {
               console.log(err);
@@ -272,7 +314,11 @@ exports.setNewCards = functions
       });
       await Promise.all(promises);
       await batch.commit();
-      console.log("Docs updated!");
+      // await db
+      //   .collection("fcm")
+      //   .doc("fcmnotif")
+      //   .set({ time: new Date().toISOString(), numCards: articles.length });
+      // console.log("Docs updated!");
     } catch (err) {
       console.log(err);
     }

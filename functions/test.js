@@ -6,38 +6,20 @@ filter.addWords("sex", "sexual");
 
 exports.test = async (req, res) => {
   try {
-    const email = req.params.email;
-    const userRef = await db.collection("Users").doc(email).get();
-    const { liked, disliked } = userRef.data();
-    let seenCardids = [];
-    if (liked) {
-      liked.forEach((likedData) => {
-        seenCardids.push(likedData.cardid);
-      });
-    }
-    if (disliked) {
-      disliked.forEach((dislikedData) => {
-        seenCardids.push(dislikedData.cardid);
-      });
-    }
-
-    const util = await db.doc("util/ids").get();
-    let cards = [];
-    const cardsRef = await db
-      .collection("CardsWithLogin")
-      .where("type", "==", "trending")
-      .orderBy("sid", "desc")
-      .limit(100)
-      .get();
-    cardsRef.forEach((card) => {
-      cards.push(card.data());
+    const docsRef = await db.collection("Users").get();
+    let promises = [];
+    docsRef.forEach((doc) => {
+      promises.push(
+        doc.ref.set(
+          {
+            Profile_Click: admin.firestore.FieldValue.delete(),
+          },
+          { merge: true }
+        )
+      );
     });
-    let { cardids } = util.data();
-    let unseenCardids = cardids
-      .filter((x) => !seenCardids.includes(x))
-      .concat(seenCardids.filter((x) => !cardids.includes(x)));
-
-    res.status(200).send({ cards });
+    await Promise.all(promises);
+    res.status(200).send("DB Updated!");
   } catch (err) {
     res.status(500).send(err);
   }

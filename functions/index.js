@@ -121,7 +121,7 @@ app.get("/getPostedQuiz/:email", getPostedQuiz);
 app.get("/getQuiz/:email", getQuiz);
 
 //test
-app.get("/test/:email", test); //DO NOT USE
+app.put("/test", test); //DO NOT USE
 
 exports.api = functions.region("asia-south1").https.onRequest(app);
 

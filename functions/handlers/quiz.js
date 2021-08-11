@@ -194,7 +194,7 @@ exports.getQuiz = async (req, res) => {
         quizCards.push({ ...quiz.data() });
       }
     });
-    quizCards = quizCards.slice(0, 100);
+    quizCards = quizCards.slice(0, 2);
     res.status(200).send(quizCards);
   } catch (err) {
     res.status(500).send(err.code);

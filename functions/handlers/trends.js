@@ -119,7 +119,11 @@ exports.setTrendingCards = async (req, res) => {
     await db
       .collection("fcm")
       .doc("fcmnotif")
-      .set({ time: new Date().toISOString(), numCards: articles.length });
+      .set({
+        time: new Date().toISOString(),
+        numCards: articles.length,
+        image: articles[0].mainImage,
+      });
     res.status(200).send({ message: "Changes Saved!" });
   } catch (err) {
     res.status(500).send(err);

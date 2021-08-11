@@ -3,7 +3,7 @@ const axios = require("axios").default;
 const wiki = require("wikipedia");
 const Filter = require("bad-words"),
   filter = new Filter();
-filter.addWords("sex", "sexual");
+filter.addWords("sex", "sexual", "sex positions");
 
 const sendCards = (docs, res) => {
   let cards = [];
@@ -345,7 +345,10 @@ exports.getCards = async (req, res) => {
       const { main_category, image_links, mainImage } = card.data();
       let newImageLinks = [];
       let isSafe = true;
-      if (main_category !== filter.clean(main_category)) {
+      if (
+        main_category.toLowerCase() !==
+        filter.clean(main_category.toLowerCase())
+      ) {
         isSafe = false;
       }
       let imgProb = false;

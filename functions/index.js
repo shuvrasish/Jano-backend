@@ -56,6 +56,8 @@ const {
   attemptQuiz,
   getAttemptedQuizes,
   reAttemptQuiz,
+  getPostedQuiz,
+  getQuiz,
 } = require("./handlers/quiz");
 const { setutil } = require("./handlers/util");
 
@@ -115,6 +117,8 @@ app.post("/postQuiz/:email", postQuiz);
 app.post("/attemptQuiz/:email/:quizid/:userans", attemptQuiz);
 app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
 app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
+app.get("/getPostedQuiz/:email", getPostedQuiz);
+app.get("/getQuiz/:email", getQuiz);
 
 //test
 app.get("/test/:email", test); //DO NOT USE
@@ -126,10 +130,12 @@ exports.sendNotifForCards = functions
   .firestore.document("fcm/fcmnotif")
   .onWrite(async (event) => {
     const numCards = event.after.get("numCards");
+    const image = event.after.get("image");
     let message = {
       notification: {
-        title: `${numCards} new trending cards added!`, //TODO: add any one trending card image
+        title: `${numCards} new trending cards added!`,
         body: "Check them out now!",
+        image: image,
       },
       topic: "trendingcards",
     };
@@ -145,7 +151,7 @@ exports.sendNotifForQuotes = functions
     const image = event.after.get("image");
     let message = {
       notification: {
-        title: "Quote of the day!", //TODO: add any one trending card image
+        title: "Quote of the day!",
         body: quoteBody + " - " + author,
         image: image,
       },

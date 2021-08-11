@@ -40,8 +40,24 @@ exports.getLiked = async (req, res) => {
         .slice(0, 5);
       for (let likedData of likedArray) {
         let card = await db.doc(`CardsWithLogin/${likedData.cardid}`).get();
+        const { mainImage, image_links } = card.data();
+        let imgProb = false;
+        let newImageLinks = [];
+        if (
+          !mainImage &&
+          (image_links.length === 0 || image_links[0].trim() === "")
+        ) {
+          newImageLinks.push(
+            "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20image%204.gif?alt=media&token=9470acd6-3b8d-4d37-93a8-e233e4f9ca68"
+          );
+          imgProb = true;
+        }
         if (card.exists) {
-          cards.push({ ...card.data(), likedTime: likedData.time });
+          cards.push({
+            ...card.data(),
+            likedTime: likedData.time,
+            image_links: imgProb ? newImageLinks : image_links,
+          });
         }
       }
     }
@@ -357,7 +373,7 @@ exports.getCards = async (req, res) => {
         (image_links.length === 0 || image_links[0].trim() === "")
       ) {
         newImageLinks.push(
-          "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20Jano%203.gif?alt=media&token=8352d5c6-5949-4188-9cb8-b041799a45a2"
+          "https://firebasestorage.googleapis.com/v0/b/swipeekaro.appspot.com/o/Generic%20image%204.gif?alt=media&token=9470acd6-3b8d-4d37-93a8-e233e4f9ca68"
         );
         imgProb = true;
       }

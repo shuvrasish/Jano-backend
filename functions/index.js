@@ -58,6 +58,8 @@ const {
   reAttemptQuiz,
   getPostedQuiz,
   getQuiz,
+  likeQuiz,
+  dislikeQuiz,
 } = require("./handlers/quiz");
 const { setutil } = require("./handlers/util");
 
@@ -119,6 +121,8 @@ app.get("/getAttemptedQuizes/:email", getAttemptedQuizes);
 app.post("/reAttemptQuiz/:email/:userans/:quizid", reAttemptQuiz);
 app.get("/getPostedQuiz/:email", getPostedQuiz);
 app.get("/getQuiz/:email", getQuiz);
+app.post("/likeQuiz/:email/:quizid", likeQuiz);
+app.post("/dislikeQuiz/:email/:quizid", dislikeQuiz);
 
 //test
 app.put("/test", test); //DO NOT USE

@@ -200,3 +200,36 @@ exports.getQuiz = async (req, res) => {
     res.status(500).send(err.code);
   }
 };
+
+exports.likeQuiz = async (req, res) => {
+  try {
+    const quizid = req.params.quizid;
+    const email = req.params.email;
+
+    let newEntry = { quizid: quizid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      likedQuiz: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totallikedQuiz: admin.firestore.FieldValue.increment(1),
+    });
+    res.status(201).send({ message: "Liked quiz added." });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+};
+
+exports.dislikeQuiz = async (req, res) => {
+  try {
+    const quizid = req.params.quizid;
+    const email = req.params.email;
+    let newEntry = { quizid: quizid, time: new Date().toISOString() };
+    const userRef = db.collection("Users").doc(email);
+    await userRef.update({
+      dislikedQuiz: admin.firestore.FieldValue.arrayUnion(newEntry),
+      totaldislikedQuiz: admin.firestore.FieldValue.increment(1),
+    });
+    res.status(201).send({ message: "Disliked quiz added." });
+  } catch (err) {
+    res.status(500).send(err);
+  }
+};

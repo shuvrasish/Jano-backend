@@ -246,11 +246,6 @@ exports.likeCard = async (req, res) => {
   try {
     const cardid = req.params.cardid;
     const email = req.params.email;
-    // const analyticsDoc = db.collection("CardsWithLoginAnalytics").doc(cardid);
-    // await analyticsDoc.update({
-    //   likes: admin.firestore.FieldValue.arrayUnion(email),
-    //   totallikes: admin.firestore.FieldValue.increment(1),
-    // });
 
     let newEntry = { cardid: cardid, time: new Date().toISOString() };
     const userRef = db.collection("Users").doc(email);

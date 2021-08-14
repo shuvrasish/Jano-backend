@@ -99,7 +99,6 @@ exports.getCardsWithHashtag = (req, res) => {
   let cards = [];
   db.collection("CardsWithLogin")
     .orderBy("sid", "desc")
-    .limit(100)
     .get()
     .then((docs) => {
       docs.forEach((doc) => {
